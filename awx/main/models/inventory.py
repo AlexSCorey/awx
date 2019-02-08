@@ -1986,6 +1986,7 @@ class ec2(PluginFileInjector):
             'ec2_reason': 'state_transition_reason',
             'ec2_security_group_ids': "security_groups | map(attribute='group_id') | list |  join(',')",
             'ec2_security_group_names': "security_groups | map(attribute='group_name') | list |  join(',')",
+            'ec2_tag_Name': 'tags.Name',
             'ec2_state': 'state.name',
             'ec2_state_code': 'state.code',
             'ec2_state_reason': 'state_reason.message if state_reason is defined else ""',
