@@ -5,7 +5,7 @@ import json
 import pytest
 
 from awx.main.tests import data
-from awx.main.utils.ansible import could_be_playbook, could_be_inventory
+from awx.main.utils.ansible import could_be_playbook, could_be_inventory, filter_non_json_lines
 
 DATA = os.path.join(os.path.dirname(data.__file__), 'ansible_utils')
 
