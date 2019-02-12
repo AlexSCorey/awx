@@ -1963,7 +1963,7 @@ class azure_rm(PluginFileInjector):
 
 class ec2(PluginFileInjector):
     plugin_name = 'aws_ec2'
-    initial_version = '2.6'  # 2.5 has bugs forming keyed groups
+    initial_version = '2.7'  # 2.5 has bugs forming keyed groups
     ini_env_reference = 'EC2_INI_PATH'
 
     def _compat_compose_vars(self):
@@ -2130,7 +2130,7 @@ class ec2(PluginFileInjector):
 
 class gce(PluginFileInjector):
     plugin_name = 'gcp_compute'
-    initial_version = '2.6'
+    initial_version = '2.7'
 
     def get_script_env(self, inventory_update, private_data_dir, private_data_files):
         env = super(gce, self).get_script_env(inventory_update, private_data_dir, private_data_files)
@@ -2239,7 +2239,7 @@ class vmware(PluginFileInjector):
 class openstack(PluginFileInjector):
     ini_env_reference = 'OS_CLIENT_CONFIG_FILE'
     plugin_name = 'openstack'
-    initial_version = '2.5'
+    initial_version = '2.7'
 
     def _get_clouds_dict(self, inventory_update, credential, private_data_dir, mk_cache=True):
         openstack_auth = dict(auth_url=credential.get_input('host', default=''),
