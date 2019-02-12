@@ -1909,9 +1909,8 @@ class RunInventoryUpdate(BaseTask):
         if inventory_update.source in InventorySource.injectors:
             injector = InventorySource.injectors[inventory_update.source](kwargs['ansible_version'])
 
-        env = injector.build_env(inventory_update, env, kwargs['private_data_dir'], kwargs['private_data_files'])
-
         if injector is not None:
+            env = injector.build_env(inventory_update, env, kwargs['private_data_dir'], kwargs['private_data_files'])
             # All CLOUD_PROVIDERS sources implement as either script or auto plugin
             if injector.should_use_plugin():
                 env['ANSIBLE_INVENTORY_ENABLED'] = 'auto'
