@@ -1861,6 +1861,9 @@ class PluginFileInjector(object):
         """
         injected_env = {}
         credential = inventory_update.get_cloud_credential()
+        # some sources may have no credential, specifically ec2
+        if credential is None:
+            return injected_env
         builtin_injector = self.get_builtin_injector(inventory_update.source)
         if builtin_injector is not None:
             builtin_injector(credential, injected_env, private_data_dir)
