@@ -49,7 +49,7 @@ from awx.main.models import (
     UnifiedJob, Notification,
     Inventory, SmartInventoryMembership,
     Job, AdHocCommand, ProjectUpdate, InventoryUpdate, SystemJob,
-    Project,
+    Project, InventorySource,
     JobEvent, ProjectUpdateEvent, InventoryUpdateEvent, AdHocCommandEvent, SystemJobEvent,
     build_safe_env
 )
