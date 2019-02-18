@@ -1555,7 +1555,8 @@ class InventorySource(UnifiedJobTemplate, InventorySourceOptions, RelatedJobsMix
             return True
         elif self.source == 'gce':
             # These updates will hang if correct credential is not supplied
-            return bool(self.get_cloud_credential().kind == 'gce')
+            credential = self.get_cloud_credential()
+            return bool(credential and credential.kind == 'gce')
         return True
 
     def create_inventory_update(self, **kwargs):
