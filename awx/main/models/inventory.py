@@ -1868,7 +1868,7 @@ class PluginFileInjector(object):
                     from awx.main.models.credential import build_safe_env
                     return build_safe_env(injected_env)
         elif self.base_injector == 'template':
-            injected_env['INVENTORY_UPDATE_ID'] = inventory_update.pk  # so injector knows this is inventory
+            injected_env['INVENTORY_UPDATE_ID'] = str(inventory_update.pk)  # so injector knows this is inventory
             safe_env = injected_env.copy()
             args = []
             safe_args = []
