@@ -1923,7 +1923,9 @@ class PluginFileInjector(object):
 
 class azure_rm(PluginFileInjector):
     plugin_name = 'azure_rm'
-    initial_version = '2.8'
+    # 2.8 does not have all needed hostvars https://github.com/ansible/ansible/issues/51864
+    # TODO: put in correct version when Ansible core fixes are in
+    initial_version = '4.0'
     ini_env_reference = 'AZURE_INI_PATH'
     base_injector = 'managed'
 
@@ -1975,7 +1977,11 @@ class azure_rm(PluginFileInjector):
 
 class ec2(PluginFileInjector):
     plugin_name = 'aws_ec2'
-    initial_version = '2.8'  # 2.5 has bugs forming keyed groups
+    # 2.5 has bugs forming keyed groups
+    # 2.8 does not allow parent groups or group names like us-east-2
+    # 2.8 does not have all needed hostvars https://github.com/ansible/ansible/issues/52358
+    # TODO: put in correct version when Ansible core fixes are in
+    initial_version = '4.0'
     ini_env_reference = 'EC2_INI_PATH'
     base_injector = 'managed'
 
@@ -2143,7 +2149,9 @@ class ec2(PluginFileInjector):
 
 class gce(PluginFileInjector):
     plugin_name = 'gcp_compute'
-    initial_version = '2.8'
+    # 2.8 does not have all needed hostvars https://github.com/ansible/ansible/issues/51884
+    # TODO: put in correct version when Ansible core fixes are in
+    initial_version = '4.0'
     base_injector = 'managed'
 
     def get_script_env(self, inventory_update, private_data_dir, private_data_files):
@@ -2184,9 +2192,8 @@ class gce(PluginFileInjector):
         from awx.main.models.credential.injectors import gce as builtin_injector
         creds_path = builtin_injector(credential, {}, private_data_dir)
 
-        # gce never processed ther group_by options, if it had, we would selectively
-        # apply those options here, but it didn't, so they are added here
-        # and we may all hope that one day they can die, and rest in peace
+        # gce never processed the group_by field, if it had, we would selectively
+        # apply those options here, but it did not, so all groups are added here
         keyed_groups = [
             # the jinja2 syntax is duplicated with compose
             # https://github.com/ansible/ansible/issues/51883
@@ -2220,6 +2227,7 @@ class gce(PluginFileInjector):
 
     def get_plugin_env(self, inventory_update, private_data_dir, private_data_files, safe=False):
         # gce wants everything defined in inventory & cred files
+        # this explicitly turns off injection of environment variables
         return {}
 
 
@@ -2255,7 +2263,7 @@ class vmware(PluginFileInjector):
 class openstack(PluginFileInjector):
     ini_env_reference = 'OS_CLIENT_CONFIG_FILE'
     plugin_name = 'openstack'
-    initial_version = '2.8'
+    initial_version = '2.7.8'  # https://github.com/ansible/ansible/pull/52369
 
     def _get_clouds_dict(self, inventory_update, credential, private_data_dir, mk_cache=True):
         openstack_auth = dict(auth_url=credential.get_input('host', default=''),
