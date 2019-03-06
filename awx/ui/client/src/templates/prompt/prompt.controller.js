@@ -181,7 +181,8 @@ export default [ 'ProcessErrors', 'CredentialTypeModel', 'TemplatesStrings',
                         }
                         vm.steps.preview.tab.order = order;
                         vm.steps.preview.tab._disabled = vm.readOnlyPrompts ? false : true;
-                        modal.show(strings.get('prompt.PROMPT'));
+                        let templateName = vm.promptDataClone.templateName;
+                        modal.show(templateName)
                         vm.promptData.triggerModalOpen = false;
 
                         modal.onClose = () => {
