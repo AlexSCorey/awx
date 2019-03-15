@@ -16,7 +16,7 @@
         multiSelect: true,
         trackBy: 'group.id',
         basePath:  'api/v2/inventories/{{$stateParams.inventory_id}}/groups/',
-        layoutClass: 'List-staticColumnLayout--groups',
+        layoutClass: 'List-staticColumnLayout--inventoryGroups List-staticColumnLayout--groups',
         staticColumns: [
             {
                 field: 'failed_hosts',
@@ -39,7 +39,7 @@
                 key: true,
                 uiSref: "inventories.edit.groups.edit({group_id:group.id})",
                 columnClass: 'col-lg-10 col-md-10 col-sm-10 col-xs-10',
-                class: 'InventoryManage-breakWord',
+                class: 'InventoryManage-breakWord'
             }
         },
 
