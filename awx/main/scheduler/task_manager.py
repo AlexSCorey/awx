@@ -251,6 +251,8 @@ class TaskManager():
                 task.controller_node = controller_node
                 logger.debug('Submitting isolated {} to queue {} controlled by {}.'.format(
                              task.log_format, task.execution_node, controller_node))
+            elif rampart_group.is_containerized:
+                task.instance_group = rampart_group
             else:
                 task.instance_group = rampart_group
                 if instance is not None:
@@ -492,6 +494,12 @@ class TaskManager():
                 self.start_task(task, None, task.get_jobs_fail_chain(), None)
                 continue
             for rampart_group in preferred_instance_groups:
+                if task.can_run_containerized and rampart_group.is_containerized:
+                    self.graph[rampart_group.name]['graph'].add_job(task)
+                    self.start_task(task, rampart_group, task.get_jobs_fail_chain(), None)
+                    found_acceptable_queue = True
+                    break
+
                 if idle_instance_that_fits is None:
                     idle_instance_that_fits = rampart_group.find_largest_idle_instance()
                 remaining_capacity = self.get_remaining_capacity(rampart_group.name)
