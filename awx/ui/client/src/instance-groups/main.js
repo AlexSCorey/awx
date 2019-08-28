@@ -232,14 +232,11 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
             }
         },
         resolve: {
-            ListDefinition: ['CredentialTypesList', list => list],
+            ListDefinition: ['CredentialList', list => list],
             Dataset: ['ListDefinition', 'QuerySet', '$stateParams', 'GetBasePath', (list, qs, $stateParams, GetBasePath) => {
                 const params = {
-                    // order_by: 'name',
                     credential_type__kind: 'kubernetes',
-                    // page_size: 5
                 };
-                console.log($stateParams, list, 'state params')
                 const searchPath = GetBasePath('credentials');
                 return qs.search(
                     searchPath, params,

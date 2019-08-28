@@ -81,7 +81,6 @@ export default ['templateUrl', 'i18n', function(templateUrl, i18n) {
                     $scope.$parent[`${list.iterator}_name`] = $scope.currentSelection.name;
                 }
                 $scope.$parent[list.iterator] = $scope.currentSelection.id;
-                console.log($scope,  'save modal')
                 $state.go('^');
             };
 
@@ -91,7 +90,6 @@ export default ['templateUrl', 'i18n', function(templateUrl, i18n) {
             };
 
             $scope.toggle_row = function (selectedRow) {
-                console.log('toggle row', selectedRow)
                 let list = $scope.list;
                 let count = 0;
                 $scope[list.name].forEach(function(row) {

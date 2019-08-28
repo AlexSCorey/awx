@@ -65,10 +65,11 @@ function InstanceGroupsStrings(BaseString) {
     ns.alert = {
         MISSING_PARAMETER: t.s('Instance Group parameter is missing.'),
     };
-    ns.credential = {
+    ns.container = {
         PANEL_TITLE: t.s('Add Container Group'),
         LOOK_UP_TITLE: t.s('Add Credential'),
-        CREDENTIAL_TYPE_PLACEHOLDER: t.s('SELECT A CREDENTIAL')
+        CREDENTIAL_PLACEHOLDER: t.s('SELECT A CREDENTIAL'),
+        POD_SPEC_LABEL: t.s('Pod Spec')
     }
 }
 
