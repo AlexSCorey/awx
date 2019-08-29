@@ -3,6 +3,7 @@ import {
 } from '../shared/template-url/template-url.factory';
 import CapacityAdjuster from './capacity-adjuster/capacity-adjuster.directive';
 import AddContainerGroup from './container-groups/add-container-group.view.html'
+import EditContainerGroupController from './container-groups/edit-container-group.controller'
 import AddContainerGroupController from './container-groups/add-container-group.controller'
 import CapacityBar from './capacity-bar/capacity-bar.directive';
 import instanceGroupsMultiselect from '../shared/instance-groups-multiselect/instance-groups.directive';
@@ -28,9 +29,6 @@ import InstanceGroupsStrings from './instance-groups.strings';
 
 import instanceGroupJobsRoute from '~features/jobs/routes/instanceGroupJobs.route.js';
 import instanceJobsRoute from '~features/jobs/routes/instanceJobs.route.js';
-const addEditTemplate = require('~features/applications/add-edit-applications.view.html');
-import AddController from '/Users/acorey/Ansible/awx/awx/ui/client/features/applications/add-applications.controller';
-
 
 
 const MODULE_NAME = 'instanceGroups';
@@ -174,7 +172,7 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
     });
     $stateExtender.addState({
         name: 'instanceGroups.addContainerGroup',
-        url: '/add_container_group',
+        url: '/container_group',
         views: {
             'addContainerGroup@instanceGroups': {
                 templateUrl: AddContainerGroup,
@@ -252,6 +250,91 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
             }
         }
     });
+
+
+
+
+    $stateExtender.addState({
+        name: 'instanceGroups.editContainerGroup',
+        url: '/container_group/edit/:instance_group_id',
+        views: {
+            'editContainerGroup@instanceGroups': {
+                templateUrl: AddContainerGroup,
+                controller: EditContainerGroupController,
+                controllerAs: 'vm'
+            }
+        },
+        resolve: {
+            resolvedModels: InstanceGroupsResolve,
+            EditContainerGroupDataset: ['GetBasePath', 'QuerySet', '$stateParams',
+            function (GetBasePath, qs, $stateParams) {
+                let path = `${GetBasePath('instance_groups')}${$stateParams.instance_group_id}`;
+                console.log($stateParams, 'data')
+                return qs.search(path, $stateParams)
+                }
+            ],
+        },
+        ncyBreadcrumb: {
+            label: '{{breadcrumb.instance_group_name}}'
+        },
+    });
+
+    $stateExtender.addState({
+        name: 'instanceGroups.editContainerGroup.credentials',
+        url: '/credential?selected',
+        searchPrefix: 'credential',
+        params: {
+            credential_search: {
+                value: {
+                    order_by: 'name',
+                    page_size: 5,
+                },
+                dynamic: true,
+                squash: ''
+            }
+        },
+        data: {
+            basePath: 'credentials',
+            formChildState: true
+        },
+        views: {
+            'credentials@instanceGroups.editContainerGroup': {
+                templateProvider: (ListDefinition, generateList) => {
+                    const html = generateList.build({
+                        mode: 'lookup',
+                        list: ListDefinition,
+                        input_type: 'radio'
+                    });
+                    return `<lookup-modal>${html}</lookup-modal>`;
+                }
+            }
+        },
+        resolve: {
+            ListDefinition: ['CredentialList', list => list],
+            Dataset: ['ListDefinition', 'QuerySet', '$stateParams', 'GetBasePath', (list, qs, $stateParams, GetBasePath) => {
+                const params = {
+                    credential_type__kind: 'kubernetes',
+                };
+                const searchPath = GetBasePath('credentials');
+                return qs.search(
+                    searchPath, params,
+                    $stateParams[`${list.iterator}_search`]
+                )
+            }]
+        },
+        onExit ($state) {
+            if ($state.transition) {
+                $('#form-modal').modal('hide');
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+            }
+        }
+    });
+
+
+
+
+
     $stateExtender.addState({
         name: 'instanceGroups.edit',
         route: '/:instance_group_id',
@@ -282,6 +365,7 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
                 ($stateParams, GetBasePath, qs) => {
                     const searchParams = $stateParams.instance_search;
                     const searchPath = GetBasePath('instances');
+                    console.log(searchParams, $stateParams, 'edit')
                     return qs.search(searchPath, searchParams);
                 }
             ]

@@ -41,12 +41,19 @@
         </at-list-toolbar>
         <at-list results="instance_groups">
             <at-row ng-repeat="instance_group in instance_groups"
-                ng-class="{'at-Row--active': (instance_group.id === vm.activeId)}">
-
+                ng-class="{'at-Row--active': (instance_group.id === vm.activeId)}" >
                 <div class="at-Row-items">
                     <at-row-item
+                        ng-if="!instance_group.credential"
                         header-value="{{ instance_group.name }}"
                         header-state="instanceGroups.edit({instance_group_id:{{instance_group.id}}})"
+                        header-tag="{{ instance_group.is_isolated ? vm.strings.get('list.ROW_ITEM_LABEL_ISOLATED') : '' }}"
+                    >
+                    </at-row-item>
+                    <at-row-item
+                        ng-if="instance_group.credential"
+                        header-value="{{ instance_group.name }}"
+                        header-state="instanceGroups.editContainerGroup({instance_group_id:{{instance_group.id}}})"
                         header-tag="{{ instance_group.is_isolated ? vm.strings.get('list.ROW_ITEM_LABEL_ISOLATED') : '' }}"
                     >
                     </at-row-item>
@@ -77,7 +84,7 @@
                 </div>
 
                 <div class="at-Row-actions">
-                    <capacity-bar label-value="{{:: vm.strings.get('list.ROW_ITEM_LABEL_USED_CAPACITY') }}" capacity="instance_group.consumed_capacity" total-capacity="instance_group.capacity"></capacity-bar>
+                    <capacity-bar ng-show="!instance_group.credential" label-value="{{:: vm.strings.get('list.ROW_ITEM_LABEL_USED_CAPACITY') }}" capacity="instance_group.consumed_capacity" total-capacity="instance_group.capacity"></capacity-bar>
                     <at-row-action icon="fa-trash" ng-click="vm.deleteInstanceGroup(instance_group)" ng-if="vm.rowAction.trash(instance_group)">
                     </at-row-action>
                 </div>

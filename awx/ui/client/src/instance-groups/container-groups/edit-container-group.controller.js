@@ -1,15 +1,17 @@
-function AddContainerGroupController(ToJSON,$scope, $state, models, strings, i18n, CredTypesList) {
+function EditContainerGroupController(ToJSON, $scope, $state, models, strings, i18n, EditContainerGroupDataset) {
+
   const vm = this || {};
   const {
     instanceGroup,
     credential
   } = models;
+  console.log('in edit controller', EditContainerGroupDataset)
 
-  console.log(instanceGroup, 'instanceGroup model')
   vm.mode = 'add'
   vm.strings = strings
-  vm.panelTitle = strings.get('state.ADD_CONTAINER_GROUP_BREADCRUMB_LABEL')
+  // vm.panelTitle = EditContainerGroupDataset.data.name
   vm.lookUpTitle = strings.get('container.LOOK_UP_TITLE')
+
   vm.form = instanceGroup.createFormSchema('post')
   vm.form.name.required = true;
   vm.form.credential = {
@@ -18,30 +20,15 @@ function AddContainerGroupController(ToJSON,$scope, $state, models, strings, i18
     id: 'credential'
   };
   vm.form.credential._resource = 'credential';
-  vm.form.credential._route = "instanceGroups.addContainerGroup.credentials"
+  vm.form.credential._route = "instanceGroups.editContainerGroup.credentials"
   vm.form.credential._model = credential
-  vm.form.credential._placeholder = strings.get('container.CREDENTIAL_PLACEHOLDER')
+  // vm.form.credential._placeholder = EditContainerGroupDataset.data.summary_fields.credential.name
   vm.form.credential.required = true
-  vm.form.podSpec = podSpecDetails()
+  vm.form.credential._value = EditContainerGroupDataset.data.summary_fields.credential.id
   vm.podSpec = {
       type: 'textarea',
       id: 'pod_spec'
   }
-  function podSpecDetails () {
-    // const podSpec = instanceGroup.get('extra_vars');
-
-    // if (!extraVars) {
-    //     return null;
-    // }
-
-    // const label = strings.get('labels.EXTRA_VARS');
-    // const tooltip = strings.get('tooltips.EXTRA_VARS');
-    // const value = parse(extraVars);
-    // const disabled = true;
-    // const name = 'extra_vars';
-
-    // return { label, tooltip, value, disabled, name };
-}
 
   vm.podSpec.label = strings.get('container.POD_SPEC_LABEL');
 
@@ -64,14 +51,14 @@ function AddContainerGroupController(ToJSON,$scope, $state, models, strings, i18
 }
 
 
-AddContainerGroupController.$inject = [
+EditContainerGroupController.$inject = [
   'ToJSON',
   '$scope',
   '$state',
   'resolvedModels',
   'InstanceGroupsStrings',
   'i18n',
-  'CredTypesList'
+  'EditContainerGroupDataset'
 ];
 
-export default AddContainerGroupController;
+export default EditContainerGroupController;

@@ -44,7 +44,9 @@ function EditApplicationsController (models, $state, strings, $scope) {
     });
 
     $scope.$watch('organization', () => {
+        console.log('watch')
         if ($scope.organization) {
+            console.log('watch if')
             vm.form.organization._idFromModal = $scope.organization;
         }
     });
@@ -80,6 +82,7 @@ function EditApplicationsController (models, $state, strings, $scope) {
     delete vm.form.name.help_text;
 
     vm.form.save = data => {
+        console.log(data, 'save data')
         const hiddenData = {
             user: me.get('id')
         };
