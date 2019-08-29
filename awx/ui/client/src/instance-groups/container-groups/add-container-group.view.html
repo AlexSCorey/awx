@@ -4,14 +4,14 @@
   <at-panel-body>
     <at-form state="vm.form" autocomplete="off">
       <at-input-text col="4" tab="1" state="vm.form.name"></at-input-text>
-      <!-- <at-input-text col="4" tab="1" state="vm.form.description"></at-input-text> -->
       <at-input-lookup col="4" tab="3" state="vm.form.credential" id="containter_groups_credential"></at-input-lookup>
-      <!-- <at-code-mirror
+      <at-code-mirror
         col="4" tab="3"
-        label = "{{:: vm.podSpec.label}}"
-        state="vm.form.podSpec"
         class="form-group Form-formGroup--fullWidth containerGroups-codeMirror"
-        > -->
+        variables="vm.form.extraVars.value"
+        label="{{ vm.form.extraVars.label }}"
+        name="{{ vm.form.extraVars.name }}"
+      >
       </at-code-mirror>
       <at-action-group col="12" pos="right">
         <at-form-action type="cancel" to="instanceGroups"></at-form-action>

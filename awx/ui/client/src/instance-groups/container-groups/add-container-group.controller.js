@@ -1,65 +1,56 @@
-function AddContainerGroupController(ToJSON,$scope, $state, models, strings, i18n, CredTypesList) {
+function AddContainerGroupController(ToJSON, $scope, $state, models, strings, i18n, DataSet) {
   const vm = this || {};
   const {
     instanceGroup,
     credential
   } = models;
 
-  console.log(instanceGroup, 'instanceGroup model')
-  vm.mode = 'add'
-  vm.strings = strings
-  vm.panelTitle = strings.get('state.ADD_CONTAINER_GROUP_BREADCRUMB_LABEL')
-  vm.lookUpTitle = strings.get('container.LOOK_UP_TITLE')
-  vm.form = instanceGroup.createFormSchema('post')
+  vm.mode = 'add';
+  vm.strings = strings;
+  vm.panelTitle = strings.get('state.ADD_CONTAINER_GROUP_BREADCRUMB_LABEL');
+  vm.lookUpTitle = strings.get('container.LOOK_UP_TITLE');
+
+  vm.form = instanceGroup.createFormSchema('post');
   vm.form.name.required = true;
+
   vm.form.credential = {
     type: 'field',
     label: i18n._('Credential'),
     id: 'credential'
   };
   vm.form.credential._resource = 'credential';
-  vm.form.credential._route = "instanceGroups.addContainerGroup.credentials"
-  vm.form.credential._model = credential
-  vm.form.credential._placeholder = strings.get('container.CREDENTIAL_PLACEHOLDER')
-  vm.form.credential.required = true
-  vm.form.podSpec = podSpecDetails()
-  vm.podSpec = {
-      type: 'textarea',
-      id: 'pod_spec'
+  vm.form.credential._route = "instanceGroups.addContainerGroup.credentials";
+  vm.form.credential._model = credential;
+  vm.form.credential._placeholder = strings.get('container.CREDENTIAL_PLACEHOLDER');
+  vm.form.credential.required = true;
+
+  vm.form.extraVars = extraVarsDetails();
+  vm.extraVars = {
+    type: 'textarea',
+    id: 'extraVars'
+  };
+  function extraVarsDetails() {
+    const extraVars = DataSet.data.actions.POST.pod_spec_override.default;
+    const label = strings.get('container.POD_SPEC_LABEL');
+    const value = extraVars;
+    const name = 'extraVars';
+    return { label, value, name };
   }
-  function podSpecDetails () {
-    // const podSpec = instanceGroup.get('extra_vars');
-
-    // if (!extraVars) {
-    //     return null;
-    // }
-
-    // const label = strings.get('labels.EXTRA_VARS');
-    // const tooltip = strings.get('tooltips.EXTRA_VARS');
-    // const value = parse(extraVars);
-    // const disabled = true;
-    // const name = 'extra_vars';
-
-    // return { label, tooltip, value, disabled, name };
-}
-
-  vm.podSpec.label = strings.get('container.POD_SPEC_LABEL');
-
+  $scope.variables = vm.form.extraVars.value;
+  $scope.name = vm.form.extraVars.name;
   vm.panelTitle = strings.get('container.PANEL_TITLE');
 
 
   $scope.$watch('credential', () => {
     if ($scope.credential) {
-      vm.form.credential._idFromModal= $scope.credential;
+        vm.form.credential._idFromModal= $scope.credential;
       }
   });
   vm.form.save = (data) => {
-    console.log(data, 'save data')
-    //navigate to edit screen of form
-    // state.go('applications.edit', { application_id: res.data.id }, { reload: true });
-    $state.go('instanceGroups.addContainerGroup')
-    return instanceGroup.request('post', { data: data });
-
+    data.pod_spec_override = vm.form.extraVars.value;
+    return instanceGroup.request('post', { data: data }).then((res) => {
+      $state.go('instanceGroups.editContainerGroup', { instance_group_id: res.data.id }, { reload: true });
+    });
   };
 }
 
@@ -71,7 +62,7 @@ AddContainerGroupController.$inject = [
   'resolvedModels',
   'InstanceGroupsStrings',
   'i18n',
-  'CredTypesList'
+  'DataSet'
 ];
 
 export default AddContainerGroupController;

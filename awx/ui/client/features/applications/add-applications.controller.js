@@ -99,7 +99,6 @@ function AddApplicationsController (models, $state, strings, $scope, Alert, $fil
     };
 
     $scope.$watch('organization', () => {
-        console.log($scope, '$watch')
         if ($scope.organization) {
             vm.form.organization._idFromModal = $scope.organization;
         }

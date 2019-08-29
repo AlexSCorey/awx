@@ -2,9 +2,9 @@ import {
     templateUrl
 } from '../shared/template-url/template-url.factory';
 import CapacityAdjuster from './capacity-adjuster/capacity-adjuster.directive';
-import AddContainerGroup from './container-groups/add-container-group.view.html'
-import EditContainerGroupController from './container-groups/edit-container-group.controller'
-import AddContainerGroupController from './container-groups/add-container-group.controller'
+import AddContainerGroup from './container-groups/add-container-group.view.html';
+import EditContainerGroupController from './container-groups/edit-container-group.controller';
+import AddContainerGroupController from './container-groups/add-container-group.controller';
 import CapacityBar from './capacity-bar/capacity-bar.directive';
 import instanceGroupsMultiselect from '../shared/instance-groups-multiselect/instance-groups.directive';
 import instanceGroupsModal from '../shared/instance-groups-multiselect/instance-groups-modal/instance-groups-modal.directive';
@@ -94,7 +94,7 @@ InstanceGroupsResolve.$inject = [
     'InstanceGroupsStrings'
 ];
 
-function InstanceGroupsRun($stateExtender, strings, Rest) {
+function InstanceGroupsRun($stateExtender, strings) {
     $stateExtender.addState({
         name: 'instanceGroups',
         url: '/instance_groups',
@@ -182,13 +182,9 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
         },
         resolve: {
             resolvedModels: InstanceGroupsResolve,
-            CredTypesList: ['Rest', 'GetBasePath', (Rest, GetBasePath) => {
-                // const params = {
-                //     order_by: 'name',
-                //     page_size: 5
-                // };
-                // Rest.setUrl(`${GetBasePath('credentials')}`)
-                // return Rest.get({params})
+            DataSet: ['Rest', 'GetBasePath', (Rest, GetBasePath) => {
+                Rest.setUrl(`${GetBasePath('instance_groups')}`);
+                return Rest.options();
             }]
         },
         ncyBreadcrumb: {
@@ -239,7 +235,7 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
                 return qs.search(
                     searchPath, params,
                     $stateParams[`${list.iterator}_search`]
-                )
+                );
             }]
         },
         onExit ($state) {
@@ -267,10 +263,9 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
         resolve: {
             resolvedModels: InstanceGroupsResolve,
             EditContainerGroupDataset: ['GetBasePath', 'QuerySet', '$stateParams',
-            function (GetBasePath, qs, $stateParams) {
+                function (GetBasePath, qs, $stateParams) {
                 let path = `${GetBasePath('instance_groups')}${$stateParams.instance_group_id}`;
-                console.log($stateParams, 'data')
-                return qs.search(path, $stateParams)
+                    return qs.search(path, $stateParams);
                 }
             ],
         },
@@ -319,7 +314,7 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
                 return qs.search(
                     searchPath, params,
                     $stateParams[`${list.iterator}_search`]
-                )
+                );
             }]
         },
         onExit ($state) {
@@ -365,7 +360,6 @@ function InstanceGroupsRun($stateExtender, strings, Rest) {
                 ($stateParams, GetBasePath, qs) => {
                     const searchParams = $stateParams.instance_search;
                     const searchPath = GetBasePath('instances');
-                    console.log(searchParams, $stateParams, 'edit')
                     return qs.search(searchPath, searchParams);
                 }
             ]

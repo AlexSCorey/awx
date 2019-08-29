@@ -1,18 +1,18 @@
-function EditContainerGroupController(ToJSON, $scope, $state, models, strings, i18n, EditContainerGroupDataset) {
+function EditContainerGroupController($rootScope, $scope, $state, models, strings, i18n, EditContainerGroupDataset) {
 
   const vm = this || {};
   const {
     instanceGroup,
     credential
   } = models;
-  console.log('in edit controller', EditContainerGroupDataset)
+  $rootScope.breadcrumb.instance_group_name = instanceGroup.get('name');
 
-  vm.mode = 'add'
-  vm.strings = strings
-  // vm.panelTitle = EditContainerGroupDataset.data.name
-  vm.lookUpTitle = strings.get('container.LOOK_UP_TITLE')
+  vm.mode = 'add';
+  vm.strings = strings;
+  vm.panelTitle = EditContainerGroupDataset.data.name;
+  vm.lookUpTitle = strings.get('container.LOOK_UP_TITLE');
 
-  vm.form = instanceGroup.createFormSchema('post')
+  vm.form = instanceGroup.createFormSchema('post');
   vm.form.name.required = true;
   vm.form.credential = {
     type: 'field',
@@ -20,39 +20,47 @@ function EditContainerGroupController(ToJSON, $scope, $state, models, strings, i
     id: 'credential'
   };
   vm.form.credential._resource = 'credential';
-  vm.form.credential._route = "instanceGroups.editContainerGroup.credentials"
-  vm.form.credential._model = credential
-  // vm.form.credential._placeholder = EditContainerGroupDataset.data.summary_fields.credential.name
-  vm.form.credential.required = true
-  vm.form.credential._value = EditContainerGroupDataset.data.summary_fields.credential.id
+  vm.form.credential._route = "instanceGroups.editContainerGroup.credentials";
+  vm.form.credential._model = credential;
+  vm.form.credential._displayValue = EditContainerGroupDataset.data.summary_fields.credential.name;
+  vm.form.credential.required = true;
+  vm.form.credential._value = EditContainerGroupDataset.data.summary_fields.credential.id;
   vm.podSpec = {
-      type: 'textarea',
-      id: 'pod_spec'
-  }
+    type: 'textarea',
+    id: 'pod_spec'
+  };
 
   vm.podSpec.label = strings.get('container.POD_SPEC_LABEL');
-
-  vm.panelTitle = strings.get('container.PANEL_TITLE');
-
-
+  vm.form.extraVars = extraVarsDetails();
+  vm.extraVars = {
+    type: 'textarea',
+    id: 'extraVars'
+  };
+  vm.form.extraVars = extraVarsDetails();
+  function extraVarsDetails() {
+    const extraVars = EditContainerGroupDataset.data.pod_spec_override;
+    const label = strings.get('container.POD_SPEC_LABEL');
+    const value = extraVars;
+    const name = 'extraVars';
+    return { label, value, name };
+  }
   $scope.$watch('credential', () => {
     if ($scope.credential) {
       vm.form.credential._idFromModal= $scope.credential;
       }
   });
   vm.form.save = (data) => {
-    console.log(data, 'save data')
-    //navigate to edit screen of form
-    // state.go('applications.edit', { application_id: res.data.id }, { reload: true });
-    $state.go('instanceGroups.addContainerGroup')
-    return instanceGroup.request('post', { data: data });
+    data.pod_spec_override = vm.form.extraVars.value;
+    return instanceGroup.request('put', { data: data }).then((res) => {
+      $state.go('instanceGroups.editContainerGroup', { instance_group_id: res.data.id }, { reload: true });
+    } );
 
   };
 }
 
 
 EditContainerGroupController.$inject = [
-  'ToJSON',
+  '$rootScope',
   '$scope',
   '$state',
   'resolvedModels',
