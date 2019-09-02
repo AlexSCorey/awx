@@ -16,7 +16,8 @@
         copy_links: yes
         src: "{{ src }}"
         dest: "{{ dest }}"
-      when: ansible_kubectl_host is not defined
+      when: ansible_kubectl_config is not defined
+      no_log: true
 
     - name: synchronize job environment with remote job container
       synchronize:
@@ -27,12 +28,10 @@
         rsync_opts:
           - "--rsh=$RSH"
       environment:
-        RSH: >-
-          oc rsh --token={{ ansible_kubectl_token }}
-          --server={{ ansible_kubectl_host }}
-          --insecure-skip-tls-verify=true -n awx
+        RSH: "oc rsh --config={{ ansible_kubectl_config }}"
       delegate_to: localhost
-      when: ansible_kubectl_host is defined
+      when: ansible_kubectl_config is defined
+      no_log: true
 
     - local_action: stat path="{{src}}/env/ssh_key"
       register: key

@@ -1,9 +1,10 @@
 import time
+import yaml
+import tempfile
+from base64 import b64encode
 
 from django.conf import settings
-from kubernetes.client import Configuration as kubeconfig
-from kubernetes.client import CoreV1Api as v1_kube_api
-from kubernetes.client import ApiClient as kube_api_client
+from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from awx.main.utils.common import parse_yaml_or_json
@@ -18,6 +19,7 @@ class PodManager(object):
         self.task = task
         if task:
             self.credential = task.instance_group.credential
+            self.kube_config = generate_tmp_kube_config(self.credential)
             self.kube_api = self._kube_api_connection(self.credential)
             self.pod_name = f"job-{task.id}"
         self.pod_definition = self._pod_definition()
@@ -58,18 +60,8 @@ class PodManager(object):
         return self.pod_definition['metadata']['namespace']
 
     def _kube_api_connection(self, credential):
-        configuration = kubeconfig()
-        configuration.api_key["authorization"] = credential.get_input('bearer_token')
-        configuration.api_key_prefix['authorization'] = 'Bearer'
-        configuration.host = credential.get_input('host')
-
-        if credential.get_input('verify_ssl'):
-            ca_cert_data = credential.get_input('ssl_ca_cert')
-            configuration.ssl_ca_cert = create_temporary_fifo(ca_cert_data.encode())
-        else:
-            configuration.verify_ssl = False
-
-        return v1_kube_api(kube_api_client(configuration))
+        api = client.CoreV1Api(api_client=config.new_client_from_config(config_file=self.kube_config))
+        return api
 
     def _pod_definition(self):
         default_pod_spec = {
@@ -102,3 +94,51 @@ class PodManager(object):
             pod_spec['spec']['containers'][0]['name'] = self.pod_name
 
         return pod_spec
+
+
+def generate_tmp_kube_config(credential):
+    config = {
+        "apiVersion": "v1",
+        "kind": "Config",
+        "preferences": {},
+        "clusters": [
+            {
+                "name": credential.get_input('host'),
+                "cluster": {
+                    "server": credential.get_input('host')
+                }
+            }
+        ],
+        "users": [
+            {
+                "name":  credential.get_input('host'),
+                "user": {
+                    "token": credential.get_input('bearer_token')
+                }
+            }
+        ],
+        "contexts": [
+            {
+                "name": credential.get_input('host'),
+                "context": {
+                    "cluster": credential.get_input('host'),
+                    "user": credential.get_input('host'),
+                    "namespace": "awx"
+                }
+            }
+        ],
+        "current-context": credential.get_input('host')
+    }
+
+    if credential.get_input('verify_ssl'):
+        config["clusters"][0]["cluster"]["certificate-authority-data"] = b64encode(
+            credential.get_input('ssl_ca_cert').encode() # encode to bytes
+        ).decode() # decode the base64 data into a str
+    else:
+        config["clusters"][0]["cluster"]["insecure-skip-tls-verify"] = True
+
+    fd, path = tempfile.mkstemp(prefix='kubeconfig')
+    with open(path, 'wb') as temp:
+        temp.write(yaml.dump(config).encode())
+        temp.flush()
+    return path
