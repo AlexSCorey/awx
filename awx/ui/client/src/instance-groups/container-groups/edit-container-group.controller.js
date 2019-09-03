@@ -31,19 +31,13 @@ function EditContainerGroupController($rootScope, $scope, $state, models, string
   };
 
   vm.podSpec.label = strings.get('container.POD_SPEC_LABEL');
-  vm.form.extraVars = extraVarsDetails();
-  vm.extraVars = {
-    type: 'textarea',
-    id: 'extraVars'
+
+  vm.form.extraVars = {
+    label: strings.get('container.POD_SPEC_LABEL'),
+    value: EditContainerGroupDataset.data.pod_spec_override,
+    name: 'extraVars'
   };
-  vm.form.extraVars = extraVarsDetails();
-  function extraVarsDetails() {
-    const extraVars = EditContainerGroupDataset.data.pod_spec_override;
-    const label = strings.get('container.POD_SPEC_LABEL');
-    const value = extraVars;
-    const name = 'extraVars';
-    return { label, value, name };
-  }
+
   $scope.$watch('credential', () => {
     if ($scope.credential) {
       vm.form.credential._idFromModal= $scope.credential;
@@ -57,7 +51,6 @@ function EditContainerGroupController($rootScope, $scope, $state, models, string
 
   };
 }
-
 
 EditContainerGroupController.$inject = [
   '$rootScope',

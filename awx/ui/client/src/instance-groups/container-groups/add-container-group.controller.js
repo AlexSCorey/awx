@@ -24,18 +24,12 @@ function AddContainerGroupController(ToJSON, $scope, $state, models, strings, i1
   vm.form.credential._placeholder = strings.get('container.CREDENTIAL_PLACEHOLDER');
   vm.form.credential.required = true;
 
-  vm.form.extraVars = extraVarsDetails();
-  vm.extraVars = {
-    type: 'textarea',
-    id: 'extraVars'
+  vm.form.extraVars = {
+    label: strings.get('container.POD_SPEC_LABEL'),
+    value: DataSet.data.actions.POST.pod_spec_override.default,
+    name: 'extraVars'
   };
-  function extraVarsDetails() {
-    const extraVars = DataSet.data.actions.POST.pod_spec_override.default;
-    const label = strings.get('container.POD_SPEC_LABEL');
-    const value = extraVars;
-    const name = 'extraVars';
-    return { label, value, name };
-  }
+
   $scope.variables = vm.form.extraVars.value;
   $scope.name = vm.form.extraVars.name;
   vm.panelTitle = strings.get('container.PANEL_TITLE');
