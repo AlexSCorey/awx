@@ -58,13 +58,13 @@ class Lookup extends React.Component {
     super(props);
 
     this.assertCorrectValueType();
-    let lookupSelectedItems = [];
+    let selectedItems = [];
     if (props.value) {
-      lookupSelectedItems = props.multiple ? [...props.value] : [props.value];
+      selectedItems = props.multiple ? [...props.value] : [props.value];
     }
     this.state = {
       isModalOpen: false,
-      lookupSelectedItems,
+      selectedItems,
       results: [],
       count: 0,
       error: null,
@@ -75,7 +75,8 @@ class Lookup extends React.Component {
       order_by: props.sortedColumnKey,
     });
     this.handleModalToggle = this.handleModalToggle.bind(this);
-    this.toggleSelected = this.toggleSelected.bind(this);
+    this.addItem = this.addItem.bind(this);
+    this.removeItem = this.removeItem.bind(this);
     this.saveModal = this.saveModal.bind(this);
     this.getData = this.getData.bind(this);
     this.clearQSParams = this.clearQSParams.bind(this);
@@ -131,45 +132,79 @@ class Lookup extends React.Component {
     }
   }
 
-  toggleSelected(row) {
-    const {
-      name,
-      onLookupSave,
-      multiple,
-      onToggleItem,
-      selectCategoryOptions,
-    } = this.props;
-    const {
-      lookupSelectedItems: updatedSelectedItems,
-      isModalOpen,
-    } = this.state;
-
-    const selectedIndex = updatedSelectedItems.findIndex(
-      selectedRow => selectedRow.id === row.id
-    );
-    if (multiple) {
-      if (selectCategoryOptions) {
-        onToggleItem(row, isModalOpen);
-      }
-      if (selectedIndex > -1) {
-        updatedSelectedItems.splice(selectedIndex, 1);
-        this.setState({ lookupSelectedItems: updatedSelectedItems });
-      } else {
-        this.setState(prevState => ({
-          lookupSelectedItems: [...prevState.lookupSelectedItems, row],
-        }));
-      }
-    } else {
-      this.setState({ lookupSelectedItems: [row] });
+  removeItem(row) {
+    const { selectedItems } = this.state;
+    const { onToggleItem } = this.props;
+    if (onToggleItem) {
+      this.setState({ selectedItems: onToggleItem(selectedItems, row) })
+      return;
     }
+    this.setState({selectedItems: selectedItems.filter(item => item.id !== row.id)})
+  }
+
+  addItem(row) {
+    const { selectedItems } = this.state;
+    const { multiple, onToggleItem } = this.props;
+    if (onToggleItem) {
+      this.setState({ selectedItems: onToggleItem(selectedItems, row) })
+      return;
+    }
+    const index = selectedItems.findIndex(item => item.id === row.id)
+
+    if (!multiple) {
+      this.setState({ selectedItems: [row] })
+      return;
+    }
+    if (index > -1) {
+      return
+    }
+    this.setState({selectedItems: [...selectedItems, row]})
+  }
+  // toggleSelected(row) {
+  //   const {
+  //     name,
+  //     onChange,
+  //     multiple,
+  //     onToggleItem,
+  //     selectCategoryOptions,
+  //     onChange,
+  //     value
+  //   } = this.props;
+  //   const {
+  //     selectedItems: updatedSelectedItems,
+  //     isModalOpen,
+  //   } = this.state;
+
+  //   const selectedIndex = updatedSelectedItems.findIndex(
+  //     selectedRow => selectedRow.id === row.id
+  //   );
+  //
+  //   if (multiple) {
+  //
+  //     if (selectCategoryOptions) {
+  //
+  //       onToggleItem(row, isModalOpen);
+  //     }
+  //     if (selectedIndex > -1) {
+  //
+  //       const valueToUpdate = value.filter(itemValue => itemValue.id !==row.id );
+  //       onChange(valueToUpdate)
+  //     } else {
+  //
+  //       onChange([...value, row])
+  //     }
+  //   } else {
+  //
+  //     onChange(row)
+  //   }
 
     // Updates the selected items from parent state
     // This handles the case where the user removes chips from the lookup input
     // while the modal is closed
-    if (!isModalOpen) {
-      onLookupSave(updatedSelectedItems, name);
-    }
-  }
+    // if (!isModalOpen) {
+    //   onChange(updatedSelectedItems, name);
+    // }
+  // }
 
   handleModalToggle() {
     const { isModalOpen } = this.state;
@@ -178,11 +213,11 @@ class Lookup extends React.Component {
     // This handles the case where the user closes/cancels the modal and
     // opens it again
     if (!isModalOpen) {
-      let lookupSelectedItems = [];
+      let selectedItems = [];
       if (value) {
-        lookupSelectedItems = multiple ? [...value] : [value];
+        selectedItems = multiple ? [...value] : [value];
       }
-      this.setState({ lookupSelectedItems });
+      this.setState({ selectedItems });
     } else {
       this.clearQSParams();
       if (selectCategory) {
@@ -194,15 +229,24 @@ class Lookup extends React.Component {
     }));
   }
 
+  removeItemAndSave(row) {
+    const { value, onChange, multiple } = this.props;
+    if (multiple) {
+      onChange(value.filter(item => item.id !== row.id))
+    } else if (value.id === row.id) {
+      onChange(null)
+    }
+  }
+
   saveModal() {
-    const { onLookupSave, name, multiple } = this.props;
-    const { lookupSelectedItems } = this.state;
+    const { onChange, multiple } = this.props;
+    const { selectedItems } = this.state;
     const value = multiple
-      ? lookupSelectedItems
-      : lookupSelectedItems[0] || null;
+      ? selectedItems
+      : selectedItems[0] || null;
 
     this.handleModalToggle();
-    onLookupSave(value, name);
+    onChange(value);
   }
 
   clearQSParams() {
@@ -216,7 +260,7 @@ class Lookup extends React.Component {
   render() {
     const {
       isModalOpen,
-      lookupSelectedItems,
+      selectedItems,
       error,
       results,
       count,
@@ -244,7 +288,7 @@ class Lookup extends React.Component {
           {(multiple ? value : [value]).map(chip => (
             <CredentialChip
               key={chip.id}
-              onClick={() => this.toggleSelected(chip)}
+              onClick={() => this.removeItemAndSave(chip)}
               isReadOnly={!canDelete}
               credential={chip}
             />
@@ -255,7 +299,7 @@ class Lookup extends React.Component {
           {(multiple ? value : [value]).map(chip => (
             <Chip
               key={chip.id}
-              onClick={() => this.toggleSelected(chip)}
+              onClick={() => this.removeItemAndSave(chip)}
               isReadOnly={!canDelete}
             >
               {chip.name}
@@ -286,19 +330,19 @@ class Lookup extends React.Component {
           onClose={this.handleModalToggle}
           actions={[
             <Button
-              key="save"
+              key="select"
               variant="primary"
               onClick={this.saveModal}
-              style={results.length === 0 ? { display: 'none' } : {}}
+              style={selectedItems.length === 0 ? { display: 'none' } : {}}
             >
-              {i18n._(t`Save`)}
+              {i18n._(t`Select`)}
             </Button>,
             <Button
               key="cancel"
               variant="secondary"
               onClick={this.handleModalToggle}
             >
-              {results.length === 0 ? i18n._(t`Close`) : i18n._(t`Cancel`)}
+              {i18n._(t`Cancel`)}
             </Button>,
           ]}
         >
@@ -317,6 +361,18 @@ class Lookup extends React.Component {
               />
             </ToolbarItem>
           )}
+          {selectedItems.length > 0 && (
+              <SelectedList
+                label={i18n._(t`Selected`)}
+                selected={selectedItems}
+                showOverflowAfter={5}
+                onRemove={this.removeItem}
+                isReadOnly={!canDelete}
+                isCredentialList={
+                  selectCategoryOptions && selectCategoryOptions.length > 0
+                }
+              />
+            )}
           <PaginatedDataList
             items={results}
             itemCount={count}
@@ -329,12 +385,8 @@ class Lookup extends React.Component {
                 itemId={item.id}
                 name={multiple ? item.name : name}
                 label={item.name}
-                isSelected={
-                  selectCategoryOptions
-                    ? value.some(i => i.id === item.id)
-                    : lookupSelectedItems.some(i => i.id === item.id)
-                }
-                onSelect={() => this.toggleSelected(item)}
+                isSelected={selectedItems.some(i => i.id === item.id)}
+                onSelect={() => this.addItem(item)}
                 isRadio={
                   !multiple ||
                   (selectCategoryOptions &&
@@ -346,18 +398,6 @@ class Lookup extends React.Component {
             renderToolbar={props => <DataListToolbar {...props} fillWidth />}
             showPageSizeOptions={false}
           />
-          {lookupSelectedItems.length > 0 && (
-            <SelectedList
-              label={i18n._(t`Selected`)}
-              selected={selectCategoryOptions ? value : lookupSelectedItems}
-              showOverflowAfter={5}
-              onRemove={this.toggleSelected}
-              isReadOnly={!canDelete}
-              isCredentialList={
-                selectCategoryOptions && selectCategoryOptions.length > 0
-              }
-            />
-          )}
           {error ? <div>error</div> : ''}
         </Modal>
       </Fragment>
@@ -374,7 +414,7 @@ Lookup.propTypes = {
   getItems: func.isRequired,
   lookupHeader: string,
   name: string,
-  onLookupSave: func.isRequired,
+  onChange: func.isRequired,
   value: oneOfType([Item, arrayOf(Item)]),
   sortedColumnKey: string.isRequired,
   multiple: bool,

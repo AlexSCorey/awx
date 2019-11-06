@@ -38,7 +38,7 @@ class ProjectLookup extends React.Component {
           name="project"
           value={value}
           onBlur={onBlur}
-          onLookupSave={onChange}
+          onChange={onChange}
           getItems={loadProjects}
           required={required}
           sortedColumnKey="name"

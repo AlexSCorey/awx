@@ -50,10 +50,10 @@ export const ScmCredentialFormField = withI18n()(
           label={i18n._(t`SCM Credential`)}
           value={scmCredential.value}
           onChange={credential => {
-            form.setFieldValue('credential', credential.id);
-            setScmCredential({
-              ...scmCredential,
-              value: credential,
+              form.setFieldValue('credential', credential ? credential.id : '')
+              setScmCredential({
+                ...scmCredential,
+                value: credential,
             });
           }}
         />
