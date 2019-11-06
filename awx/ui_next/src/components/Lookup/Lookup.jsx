@@ -14,19 +14,11 @@ import {
   Button,
   ButtonVariant,
   InputGroup as PFInputGroup,
-  Modal,
-  ToolbarItem,
 } from '@patternfly/react-core';
 import { withI18n } from '@lingui/react';
-import { t } from '@lingui/macro';
 import styled from 'styled-components';
 
-import AnsibleSelect from '../AnsibleSelect';
-import PaginatedDataList from '../PaginatedDataList';
-import VerticalSeperator from '../VerticalSeparator';
-import DataListToolbar from '../DataListToolbar';
-import CheckboxListItem from '../CheckboxListItem';
-import SelectedList from '../SelectedList';
+import LookupModal from './LookupModal';
 import { ChipGroup, Chip, CredentialChip } from '../Chip';
 import { getQSConfig, parseQueryString } from '../../util/qs';
 
@@ -58,13 +50,8 @@ class Lookup extends React.Component {
     super(props);
 
     this.assertCorrectValueType();
-    let selectedItems = [];
-    if (props.value) {
-      selectedItems = props.multiple ? [...props.value] : [props.value];
-    }
     this.state = {
       isModalOpen: false,
-      selectedItems,
       results: [],
       count: 0,
       error: null,
@@ -75,11 +62,7 @@ class Lookup extends React.Component {
       order_by: props.sortedColumnKey,
     });
     this.handleModalToggle = this.handleModalToggle.bind(this);
-    this.addItem = this.addItem.bind(this);
-    this.removeItem = this.removeItem.bind(this);
-    this.saveModal = this.saveModal.bind(this);
     this.getData = this.getData.bind(this);
-    this.clearQSParams = this.clearQSParams.bind(this);
   }
 
   componentDidMount() {
@@ -132,141 +115,25 @@ class Lookup extends React.Component {
     }
   }
 
-  removeItem(row) {
-    const { selectedItems } = this.state;
-    const { onToggleItem } = this.props;
-    if (onToggleItem) {
-      this.setState({ selectedItems: onToggleItem(selectedItems, row) })
-      return;
-    }
-    this.setState({selectedItems: selectedItems.filter(item => item.id !== row.id)})
-  }
-
-  addItem(row) {
-    const { selectedItems } = this.state;
-    const { multiple, onToggleItem } = this.props;
-    if (onToggleItem) {
-      this.setState({ selectedItems: onToggleItem(selectedItems, row) })
-      return;
-    }
-    const index = selectedItems.findIndex(item => item.id === row.id)
-
-    if (!multiple) {
-      this.setState({ selectedItems: [row] })
-      return;
-    }
-    if (index > -1) {
-      return
-    }
-    this.setState({selectedItems: [...selectedItems, row]})
-  }
-  // toggleSelected(row) {
-  //   const {
-  //     name,
-  //     onChange,
-  //     multiple,
-  //     onToggleItem,
-  //     selectCategoryOptions,
-  //     onChange,
-  //     value
-  //   } = this.props;
-  //   const {
-  //     selectedItems: updatedSelectedItems,
-  //     isModalOpen,
-  //   } = this.state;
-
-  //   const selectedIndex = updatedSelectedItems.findIndex(
-  //     selectedRow => selectedRow.id === row.id
-  //   );
-  //
-  //   if (multiple) {
-  //
-  //     if (selectCategoryOptions) {
-  //
-  //       onToggleItem(row, isModalOpen);
-  //     }
-  //     if (selectedIndex > -1) {
-  //
-  //       const valueToUpdate = value.filter(itemValue => itemValue.id !==row.id );
-  //       onChange(valueToUpdate)
-  //     } else {
-  //
-  //       onChange([...value, row])
-  //     }
-  //   } else {
-  //
-  //     onChange(row)
-  //   }
-
-    // Updates the selected items from parent state
-    // This handles the case where the user removes chips from the lookup input
-    // while the modal is closed
-    // if (!isModalOpen) {
-    //   onChange(updatedSelectedItems, name);
-    // }
-  // }
-
   handleModalToggle() {
     const { isModalOpen } = this.state;
-    const { value, multiple, selectCategory } = this.props;
-    // Resets the selected items from parent state whenever modal is opened
-    // This handles the case where the user closes/cancels the modal and
-    // opens it again
-    if (!isModalOpen) {
-      let selectedItems = [];
-      if (value) {
-        selectedItems = multiple ? [...value] : [value];
-      }
-      this.setState({ selectedItems });
-    } else {
-      this.clearQSParams();
-      if (selectCategory) {
-        selectCategory(null, 'Machine');
-      }
-    }
-    this.setState(prevState => ({
-      isModalOpen: !prevState.isModalOpen,
-    }));
+    this.setState({
+      isModalOpen: !isModalOpen,
+    });
   }
 
   removeItemAndSave(row) {
     const { value, onChange, multiple } = this.props;
     if (multiple) {
-      onChange(value.filter(item => item.id !== row.id))
+      onChange(value.filter(item => item.id !== row.id));
     } else if (value.id === row.id) {
-      onChange(null)
+      onChange(null);
     }
   }
 
-  saveModal() {
-    const { onChange, multiple } = this.props;
-    const { selectedItems } = this.state;
-    const value = multiple
-      ? selectedItems
-      : selectedItems[0] || null;
-
-    this.handleModalToggle();
-    onChange(value);
-  }
-
-  clearQSParams() {
-    const { history } = this.props;
-    const parts = history.location.search.replace(/^\?/, '').split('&');
-    const ns = this.qsConfig.namespace;
-    const otherParts = parts.filter(param => !param.startsWith(`${ns}.`));
-    history.push(`${history.location.pathname}?${otherParts.join('&')}`);
-  }
-
   render() {
+    const { error, results, count, isModalOpen } = this.state;
     const {
-      isModalOpen,
-      selectedItems,
-      error,
-      results,
-      count,
-    } = this.state;
-    const {
-      form,
       id,
       lookupHeader,
       value,
@@ -276,11 +143,13 @@ class Lookup extends React.Component {
       onBlur,
       selectCategory,
       required,
-      i18n,
       selectCategoryOptions,
       selectedCategory,
+      onChange,
+      onToggleItem,
+      sortedColumnKey,
+      qsNamespace,
     } = this.props;
-    const header = lookupHeader || i18n._(t`Items`);
     const canDelete = !required || (multiple && value.length > 1);
     const chips = () => {
       return selectCategoryOptions && selectCategoryOptions.length > 0 ? (
@@ -323,83 +192,26 @@ class Lookup extends React.Component {
             {value ? chips(value) : null}
           </ChipHolder>
         </InputGroup>
-        <Modal
-          className="awx-c-modal"
-          title={i18n._(t`Select ${header}`)}
+        <LookupModal
+          count={count}
+          results={results}
+          error={error}
+          required={required}
+          columns={columns}
+          onChange={onChange}
+          onToggleItem={onToggleItem}
+          lookupHeader={lookupHeader}
+          value={value}
+          multiple={multiple}
+          name={name}
+          sortedColumnKey={sortedColumnKey}
           isOpen={isModalOpen}
-          onClose={this.handleModalToggle}
-          actions={[
-            <Button
-              key="select"
-              variant="primary"
-              onClick={this.saveModal}
-              style={selectedItems.length === 0 ? { display: 'none' } : {}}
-            >
-              {i18n._(t`Select`)}
-            </Button>,
-            <Button
-              key="cancel"
-              variant="secondary"
-              onClick={this.handleModalToggle}
-            >
-              {i18n._(t`Cancel`)}
-            </Button>,
-          ]}
-        >
-          {selectCategoryOptions && selectCategoryOptions.length > 0 && (
-            <ToolbarItem css=" display: flex; align-items: center;">
-              <span css="flex: 0 0 25%;">Selected Category</span>
-              <VerticalSeperator />
-              <AnsibleSelect
-                css="flex: 1 1 75%;"
-                id="multiCredentialsLookUp-select"
-                label="Selected Category"
-                data={selectCategoryOptions}
-                value={selectedCategory.label}
-                onChange={selectCategory}
-                form={form}
-              />
-            </ToolbarItem>
-          )}
-          {selectedItems.length > 0 && (
-              <SelectedList
-                label={i18n._(t`Selected`)}
-                selected={selectedItems}
-                showOverflowAfter={5}
-                onRemove={this.removeItem}
-                isReadOnly={!canDelete}
-                isCredentialList={
-                  selectCategoryOptions && selectCategoryOptions.length > 0
-                }
-              />
-            )}
-          <PaginatedDataList
-            items={results}
-            itemCount={count}
-            pluralizedItemName={lookupHeader}
-            qsConfig={this.qsConfig}
-            toolbarColumns={columns}
-            renderItem={item => (
-              <CheckboxListItem
-                key={item.id}
-                itemId={item.id}
-                name={multiple ? item.name : name}
-                label={item.name}
-                isSelected={selectedItems.some(i => i.id === item.id)}
-                onSelect={() => this.addItem(item)}
-                isRadio={
-                  !multiple ||
-                  (selectCategoryOptions &&
-                    selectCategoryOptions.length &&
-                    selectedCategory.value !== 'Vault')
-                }
-              />
-            )}
-            renderToolbar={props => <DataListToolbar {...props} fillWidth />}
-            showPageSizeOptions={false}
-          />
-          {error ? <div>error</div> : ''}
-        </Modal>
+          toggleModal={() => this.setState({ isModalOpen: !isModalOpen })}
+          qsNamespace={qsNamespace}
+          selectCategory={selectCategory}
+          selectedCategory={selectedCategory}
+          selectCategoryOptions={selectCategoryOptions}
+        />
       </Fragment>
     );
   }
