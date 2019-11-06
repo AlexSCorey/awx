@@ -8,17 +8,26 @@ import {
   oneOfType,
   shape,
 } from 'prop-types';
+import { t } from '@lingui/macro';
+
 import { withRouter } from 'react-router-dom';
 import { SearchIcon } from '@patternfly/react-icons';
 import {
   Button,
   ButtonVariant,
   InputGroup as PFInputGroup,
+  ToolbarItem,
 } from '@patternfly/react-core';
 import { withI18n } from '@lingui/react';
 import styled from 'styled-components';
 
+import AnsibleSelect from '../AnsibleSelect';
+import VerticalSeperator from '../VerticalSeparator';
+import SelectedList from '../SelectedList';
 import LookupModal from './LookupModal';
+import PaginatedDataList from '../PaginatedDataList';
+import DataListToolbar from '../DataListToolbar';
+import CheckboxListItem from '../CheckboxListItem';
 import { ChipGroup, Chip, CredentialChip } from '../Chip';
 import { getQSConfig, parseQueryString } from '../../util/qs';
 
@@ -134,6 +143,7 @@ class Lookup extends React.Component {
   render() {
     const { error, results, count, isModalOpen } = this.state;
     const {
+      i18n,
       id,
       lookupHeader,
       value,
@@ -193,24 +203,78 @@ class Lookup extends React.Component {
           </ChipHolder>
         </InputGroup>
         <LookupModal
-          count={count}
-          results={results}
-          error={error}
-          required={required}
-          columns={columns}
           onChange={onChange}
           onToggleItem={onToggleItem}
           lookupHeader={lookupHeader}
           value={value}
           multiple={multiple}
-          name={name}
           sortedColumnKey={sortedColumnKey}
           isOpen={isModalOpen}
-          toggleModal={() => this.setState({ isModalOpen: !isModalOpen })}
           qsNamespace={qsNamespace}
-          selectCategory={selectCategory}
-          selectedCategory={selectedCategory}
-          selectCategoryOptions={selectCategoryOptions}
+          toggleModal={() => {
+            if (selectedCategory) {
+              selectCategory(null, 'Machine');
+            }
+            this.setState({ isModalOpen: !isModalOpen });
+          }}
+          renderList={({ selectedItems, addItem, removeItem }) => (
+            <Fragment>
+              {selectCategoryOptions && selectCategoryOptions.length > 0 && (
+                <ToolbarItem css=" display: flex; align-items: center;">
+                  <span css="flex: 0 0 25%;">Selected Category</span>
+                  <VerticalSeperator />
+                  <AnsibleSelect
+                    css="flex: 1 1 75%;"
+                    id="multiCredentialsLookUp-select"
+                    label="Selected Category"
+                    data={selectCategoryOptions}
+                    value={selectedCategory.label}
+                    onChange={selectCategory}
+                  />
+                </ToolbarItem>
+              )}
+              {selectedItems.length > 0 && (
+                <SelectedList
+                  label={i18n._(t`Selected`)}
+                  selected={selectedItems}
+                  showOverflowAfter={5}
+                  onRemove={removeItem}
+                  isReadOnly={!canDelete}
+                  isCredentialList={
+                    selectCategoryOptions && selectCategoryOptions.length > 0
+                  }
+                />
+              )}
+              <PaginatedDataList
+                items={results}
+                itemCount={count}
+                pluralizedItemName={lookupHeader}
+                qsConfig={this.qsConfig}
+                toolbarColumns={columns}
+                renderItem={item => (
+                  <CheckboxListItem
+                    key={item.id}
+                    itemId={item.id}
+                    name={multiple ? item.name : name}
+                    label={item.name}
+                    isSelected={selectedItems.some(i => i.id === item.id)}
+                    onSelect={() => addItem(item)}
+                    isRadio={
+                      !multiple ||
+                      (selectCategoryOptions &&
+                        selectCategoryOptions.length &&
+                        selectedCategory.value !== 'Vault')
+                    }
+                  />
+                )}
+                renderToolbar={props => (
+                  <DataListToolbar {...props} fillWidth />
+                )}
+                showPageSizeOptions={false}
+              />
+              {error ? <div>error</div> : ''}
+            </Fragment>
+          )}
         />
       </Fragment>
     );

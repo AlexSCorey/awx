@@ -15,8 +15,7 @@ const QuestionCircleIcon = styled(PFQuestionCircleIcon)`
 function toggleCredentialSelection(credentialsToUpdate, newCredential) {
   let newCredentialsList;
   const isSelectedCredentialInState =
-    credentialsToUpdate.filter(cred => cred.id === newCredential.id).length >
-    0;
+    credentialsToUpdate.filter(cred => cred.id === newCredential.id).length > 0;
 
   if (isSelectedCredentialInState) {
     newCredentialsList = credentialsToUpdate.filter(
@@ -85,8 +84,6 @@ class MultiCredentialsLookup extends React.Component {
     params.credential_type = selectedCredentialType.id || 1;
     return CredentialsAPI.read(params);
   }
-
-
 
   handleCredentialTypeSelect(value, type) {
     const { credentialTypes } = this.state;
