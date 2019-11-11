@@ -165,13 +165,13 @@ function ProjectForm({ project, ...props }) {
     });
   };
 
-  if (isLoading) {
-    return <ContentLoading />;
-  }
+    if (isLoading) {
+      return <ContentLoading />;
+    }
 
-  if (contentError) {
-    return <ContentError error={contentError} />;
-  }
+    if (contentError) {
+      return <ContentError error={contentError} />;
+    }
 
   return (
     <Config>
