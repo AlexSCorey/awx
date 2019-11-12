@@ -9,8 +9,15 @@ class Inventories extends Base {
   }
 
   readAccessList(id, params) {
-    return this.http.get(`${this.baseUrl}${id}/access_list/`, { params });
+    return this.http.get(`${this.baseUrl}${id}/access_list/`, {
+      params
+    });
   }
+
+  readInstanceGroups(id) {
+    return this.http.get(`${this.baseUrl}${id}/instance_groups/`)
+  }
+
 }
 
 export default Inventories;

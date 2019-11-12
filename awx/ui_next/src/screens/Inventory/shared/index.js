@@ -1,4 +1,1 @@
-export {
-  default
-}
-from './InventoryForm'
+export { default } from './InventoryForm';

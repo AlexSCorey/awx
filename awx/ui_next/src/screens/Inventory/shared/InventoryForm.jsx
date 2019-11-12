@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Formik, Field } from 'formik';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
 
 import { VariablesField } from '@components/CodeMirrorInput';
-// import ContentError from '@components/ContentError';
-// import ContentLoading from '@components/ContentLoading';
 import { Form } from '@patternfly/react-core';
-import FormField, { FieldTooltip } from '@components/FormField';
+import FormField from '@components/FormField';
 import FormActionGroup from '@components/FormActionGroup/FormActionGroup';
 import FormRow from '@components/FormRow';
 import { required } from '@util/validators';
@@ -22,20 +20,16 @@ function InventoryForm({
   instanceGroups,
 }) {
   const [organization, setOrganization] = useState(
-    inventory.organization || null
+    inventory.summary_fields.organization || null
   );
-  // const [instanceGroups, setInstanceGroups] = useState([...instanceGroups] || null);
-
-  const initialValues = !inventory.id
-    ? {
-        name: inventory.name || '',
-        description: inventory.description || '',
-        variables: inventory.variables || '---',
-        organization,
-        instanceGroups: instanceGroups || [],
-        credential: inventory.insights_credential,
-      }
-    : {};
+  const initialValues = {
+    name: inventory.name || '',
+    description: inventory.description || '',
+    variables: inventory.variables || '---',
+    organization,
+    instanceGroups: instanceGroups || [],
+    credential: inventory.insights_credential,
+  };
   return (
     <Formik
       initialValues={initialValues}
