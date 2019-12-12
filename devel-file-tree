@@ -1,0 +1,96 @@
+
+├── index.js
+├── Inventories.jsx
+├── InventoryAdd
+│   ├── index.js
+│   ├── InventoryAdd.jsx
+├── InventoryCompletedJobs
+│   ├── index.js
+│   └── InventoryCompletedJobs.jsx
+├── InventoryDetail
+│   ├── index.js
+│   └── InventoryDetail.jsx
+├── InventoryEdit
+│   ├── index.js
+│   ├── InventoryEdit.jsx
+├── InventoryGroups
+│   ├── InventoryGroupListItem.jsx
+│   ├── InventoryGroupListItem.test.jsx
+│   ├── InventoryGroups.jsx
+│   ├── InventoryGroups.test.jsx
+│   ├── InventoryGroupsList.jsx
+│   ├── InventoryGroupsList.test.jsx
+│   ├── InventoryGroupAdd.jsx
+│   ├── InventoryGroupAdd.test.jsx
+│   ├── InventoryGroup
+│   │   ├── InventoryGroupForm.jsx
+│   │   ├── InventoryGroupForm.test.jsx
+│   │   ├── InventoryGroup.jsx
+│   │   ├── InventoryGroup.test.jsx
+│   │   ├── InventoryGroupEdit.jsx
+│   │   ├── InventoryGroupEdit.test.jsx
+│   │   ├── InventoryGroupDetails.jsx
+│   │   └── InventoryGroupDetails.test.jsx
+├── InventoryHosts
+│   ├── InventoryHostListItem.jsx
+│   ├── InventoryHostListItem.test.jsx
+│   ├── InventoryHosts.jsx
+│   ├── InventoryHosts.test.jsx
+│   ├── InventoryHostList.jsx
+│   ├── InventoryHostList.test.jsx
+│   ├── InventoryHostAdd.jsx
+│   ├── InventoryHostAdd.test.jsx
+│   ├── InventoryHost
+│   │   ├── InventoryHostForm.jsx
+│   │   ├── InventoryHostForm.test.jsx
+│   │   ├── InventoryHost.jsx
+│   │   ├── InventoryHost.test.jsx
+│   │   ├── InventoryHostEdit.jsx
+│   │   ├── InventoryHostEdit.test.jsx
+│   │   ├── InventoryHostDetails.jsx
+│   │   └── InventoryHostDetails.test.jsx
+├── Inventory.jsx
+├── InventoryList
+│   ├── index.js
+│   ├── InventoryListItem.jsx
+│   ├── InventoryList.js
+├── InventorySources
+│   ├── InventorySources.jsx
+│   ├── InventorySources.test.jsx
+│   ├── InventorySourceList.test.jsx
+│   ├── InventorySourceList.jsx
+│   ├── InventorySourceItem.jsx
+│   ├── InventorySourceItem.test.jsx
+│   ├── InventorySource
+│   │   ├── InventorySourceForm.jsx
+│   │   ├── InventorySourceForm.test.jsx
+│   │   ├── InventorySource.jsx
+│   │   ├── InventorySource.test.jsx
+│   │   ├── InventorySourceEdit.jsx
+│   │   ├── InventorySourceEdit.test.jsx
+│   │   ├── InventorySourceDetails.jsx
+│   │   └── InventorySourceDetails.test.jsx
+├── CompletedJobs
+│   ├── index.js
+│   ├── CompletedJobs.test.jsx
+│   ├── CompletedJobs.jsx
+├── shared
+│   ├── index.js
+│   ├── InventoryForm.jsx
+│   └── InventoryGroupsDeleteModal.jsx
+├── SmartInventoryAdd
+│   ├── index.js
+│   └── SmartInventoryAdd.jsx
+├── SmartInventoryCompletedJobs
+│   ├── index.js
+│   └── SmartInventoryCompletedJobs.jsx
+├── SmartInventoryDetail
+│   ├── index.js
+│   └── SmartInventoryDetail.jsx
+├── SmartInventoryEdit
+│   ├── index.js
+│   └── SmartInventoryEdit.jsx
+├── SmartInventoryHosts
+│   ├── index.js
+│   └── SmartInventoryHosts.jsx
+├── SmartInventory.jsx
