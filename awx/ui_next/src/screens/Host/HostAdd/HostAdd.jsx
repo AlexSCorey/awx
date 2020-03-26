@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { Card, PageSection } from '@patternfly/react-core';
 import { CardBody } from '@components/Card';
 import HostForm from '@components/HostForm';
 import { HostsAPI } from '@api';
@@ -22,13 +23,17 @@ function HostAdd() {
   };
 
   return (
-    <CardBody>
-      <HostForm
-        handleSubmit={handleSubmit}
-        handleCancel={handleCancel}
-        submitError={formError}
-      />
-    </CardBody>
+    <PageSection>
+      <Card>
+        <CardBody>
+          <HostForm
+            handleSubmit={handleSubmit}
+            handleCancel={handleCancel}
+            submitError={formError}
+          />
+        </CardBody>
+      </Card>
+    </PageSection>
   );
 }
 
