@@ -1,28 +1,44 @@
-import React, { Component, Fragment } from 'react';
+import React, { useCallback, useState } from 'react';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
-import {
-  PageSection,
-  PageSectionVariants,
-  Title,
-} from '@patternfly/react-core';
+import { Route, Switch } from 'react-router-dom';
+// import { Config } from '../../contexts/Config';
 
-class InventoryScripts extends Component {
-  render() {
-    const { i18n } = this.props;
-    const { light } = PageSectionVariants;
+import Breadcrumbs from '../../components/Breadcrumbs';
+import InventoryScriptAdd from './InventoryScriptAdd';
+import InventoryScriptList from './InventoryScriptList';
 
-    return (
-      <Fragment>
-        <PageSection variant={light} className="pf-m-condensed">
-          <Title size="2xl" headingLevel="h2">
-            {i18n._(t`Inventory Scripts`)}
-          </Title>
-        </PageSection>
-        <PageSection />
-      </Fragment>
-    );
-  }
+function InventoryScripts({ i18n }) {
+  const [breadcrumbConfig, setBreadcrumbConfig] = useState({
+    '/inventory_scripts': i18n._(t`Inventory Scripts`),
+    '/inventory_scripts/add': i18n._(t`Create new inventory script`),
+  });
+  const buildBreadcrumbConfig = useCallback(
+    inventoryScript => {
+      if (!inventoryScript) {
+        return;
+      }
+
+      setBreadcrumbConfig({
+        '/inventory_scripts': i18n._(t`Inventory Scripts`),
+        '/inventory_scripts/add': i18n._(t`Create new inventory script`),
+      });
+    },
+    [i18n]
+  );
+  return (
+    <>
+      <Breadcrumbs breadcrumbConfig={breadcrumbConfig} />
+      <Switch>
+        <Route path="/inventory_scripts/add">
+          <InventoryScriptAdd />
+        </Route>
+        <Route path="/inventory_scripts">
+          <InventoryScriptList buildBreadcrumbConfig={buildBreadcrumbConfig} />
+        </Route>
+      </Switch>
+    </>
+  );
 }
 
 export default withI18n()(InventoryScripts);
