@@ -9,6 +9,7 @@ import {
   AngleDoubleDownIcon,
   AngleUpIcon,
   AngleDownIcon,
+  MinusIcon,
 } from '@patternfly/react-icons';
 import styled from 'styled-components';
 
@@ -30,14 +31,17 @@ const PageControls = ({
   onScrollLast,
   onScrollNext,
   onScrollPrevious,
+  togglePage,
+  isExpanded,
 }) => (
   <Wrapper>
     <Button
       aria-label={i18n._(t`Toggle expand/collapse event lines`)}
       variant="plain"
       css="margin-right: auto"
+      onClick={togglePage}
     >
-      <PlusIcon />
+      {isExpanded ? <MinusIcon /> : <PlusIcon />}
     </Button>
     <Button
       aria-label={i18n._(t`Scroll previous`)}
