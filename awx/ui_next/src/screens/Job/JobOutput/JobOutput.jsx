@@ -200,7 +200,7 @@ class JobOutput extends Component {
 
   async loadJobEvents() {
     const { job, type } = this.props;
-
+    const { results } = this.state;
     const loadRange = range(1, 50);
     this._isMounted &&
       this.setState(({ currentlyLoading }) => ({
@@ -214,6 +214,51 @@ class JobOutput extends Component {
         page_size: 50,
         order_by: 'start_line',
       });
+      const newestResults = newResults.reduce((acc, jobEvent) => {
+        const parentIndex = acc.findIndex(
+          event => event.uuid === jobEvent.parent_uuid
+        );
+
+        const isParentAndChild = acc.some(event =>
+          newResults.some(result => {
+            if (
+              event.uuid === result.parent_uuid ||
+              event.parent_uuid === result.uuid
+            ) {
+              return true;
+            }
+            return false;
+          })
+        );
+
+        if (parentIndex > -1) {
+          if (acc[parentIndex].children?.length > 0) {
+            acc[parentIndex].children.push(jobEvent);
+          } else {
+            acc[parentIndex].children = [jobEvent];
+            acc[parentIndex].isParent = true;
+          }
+        }
+
+        if (isParentAndChild || parentIndex === -1) {
+          acc.push(jobEvent);
+        }
+        return acc;
+      }, []);
+      console.log(newestResults, 'here');
+
+      const something = newestResults.forEach(jobEvent => {
+        if (jobEvent.children) {
+          jobEvent.children.forEach(child => {
+            results[child.counter] = child;
+            // console.log((results[child.counter] = child));
+          });
+        } else {
+          results[jobEvent.counter] = jobEvent;
+        }
+        return results;
+      });
+
       this._isMounted &&
         this.setState(({ results }) => {
           newResults.forEach(jobEvent => {
@@ -367,14 +412,16 @@ class JobOutput extends Component {
     const isVisibleParent =
       isVisible &&
       parents.some(
-        aparent => results[index]?.uuid === aparent.id && parent.isExpanded
+        parentEvent =>
+          results[index]?.uuid === parentEvent.id && parentEvent.isExpanded
       );
 
     let isJobExpanded = true;
     if (
       parents.some(
-        aparent =>
-          results[index]?.parent_uuid === aparent.id && !parent.isExpanded
+        parentEvent =>
+          results[index]?.parent_uuid === parentEvent.id &&
+          !parentEvent.isExpanded
       ) &&
       !isParent
     ) {
@@ -383,8 +430,9 @@ class JobOutput extends Component {
 
     if (
       parents.some(
-        aparent =>
-          results[index]?.parent_uuid === aparent.id && parent.isExpanded
+        parentEvent =>
+          results[index]?.parent_uuid === parentEvent.id &&
+          parentEvent.isExpanded
       ) &&
       !isParent
     ) {
@@ -493,9 +541,10 @@ class JobOutput extends Component {
 
   togglePage() {
     const { parents } = this.state;
-    const toggledParents = parents.map(
-      parent => (parent = { ...parent, isExpanded: !parent.isExpanded })
-    );
+    const toggledParents = parents.map(parentEvent => {
+      parentEvent.isExpanded = parentEvent.isExpanded;
+      return parentEvent;
+    });
     this.setState({ parents: toggledParents });
   }
 
