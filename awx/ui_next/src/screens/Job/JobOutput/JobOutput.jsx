@@ -121,7 +121,10 @@ class JobOutput extends Component {
       currentlyLoading: [],
       remoteRowCount: 0,
       isHostModalOpen: false,
+      isPageCollapsed: false,
       hostEvent: {},
+      collapsedTaskUuids: [],
+      collapsedPlayUuids: [],
     };
 
     this.cache = new CellMeasurerCache({
@@ -139,6 +142,8 @@ class JobOutput extends Component {
     this.handleScrollLast = this.handleScrollLast.bind(this);
     this.handleScrollNext = this.handleScrollNext.bind(this);
     this.handleScrollPrevious = this.handleScrollPrevious.bind(this);
+    this.handlePlayToggle = this.handlePlayToggle.bind(this);
+    this.handlePageToggle = this.handlePageToggle.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.isRowLoaded = this.isRowLoaded.bind(this);
     this.loadMoreRows = this.loadMoreRows.bind(this);
@@ -280,8 +285,97 @@ class JobOutput extends Component {
     });
   }
 
+  handleTaskToggle(task_uuid) {
+    if (!task_uuid) return;
+
+    const { collapsedTaskUuids } = this.state;
+
+    if (collapsedTaskUuids.includes(task_uuid)) {
+      this.setState({
+        collapsedTaskUuids: collapsedTaskUuids.filter(u => u !== task_uuid),
+      });
+    } else {
+      this.setState({
+        collapsedTaskUuids: collapsedTaskUuids.concat(task_uuid),
+      });
+    }
+
+    this.cache.clearAll();
+    this.listRef.recomputeRowHeights();
+    this.listRef.forceUpdateGrid();
+  }
+
+  handlePlayToggle(play_uuid) {
+    const { collapsedPlayUuids, collapsedTaskUuids, results } = this.state;
+    // for each new play_uuid(these are newly collapsed plays):
+    //   this.collapsedPlayUuids.appendWithoutDuplicates(play_uuid)
+    // for result in this.results: loop through results
+    //   if result.event_level == TASK: if result is a task
+    //     if result.event_data.play_uuid == play_uuid: if the play uuid of the result is the same as the play_uuid
+    //       this.collapsedTaskUuids.appendWithoutDuplicates(result.event_data.task_uuid) add the result to collapsed tasks without duplicates
+
+    // for each removed play_uuid(these are newly expanded plays):
+
+    Object.values(results).filter(result => {
+      const collapsedTaskIndex = collapsedTaskUuids.findIndex(
+        collapsedTask => collapsedTask === result.event_data.task_uuid
+      );
+      let collapsedTasks;
+      if (result.event_level === 2) {
+        if (
+          result.event_data.play_uuid === play_uuid &&
+          collapsedTaskIndex === -1
+        ) {
+          this.setState({
+            collapsedTaskUuids: collapsedTaskUuids.concat(
+              result.event_data.task_uuid
+            ),
+          });
+        }
+      }
+      return collapsedTasks;
+    });
+    const collapsedPlayIndex = collapsedPlayUuids.findIndex(
+      collapsedPlay => collapsedPlay === play_uuid
+    );
+    if (collapsedPlayIndex === -1) {
+      this.setState({
+        collapsedPlayUuids: collapsedPlayUuids.concat(play_uuid),
+      });
+    } else {
+      this.setState({
+        collapsedPlayUuids: collapsedPlayUuids.filter(cP => cP !== play_uuid),
+      });
+    }
+
+    this.cache.clearAll();
+    this.listRef.recomputeRowHeights();
+    this.listRef.forceUpdateGrid();
+  }
+
+  handlePageToggle() {
+    const { results, pageIsExpanded } = this.state;
+    // collapse all plays and tasks, yet render both event lines that have the togggle
+    // don't collapse that play recap
+    //on expand, expand all plays and tasks
+
+    //loop through results and find event_level 1. send that play_uuid to togglePlayUUID
+    // let that function collapse the tasks
+    //for expand just set state of both playuuids and taskuuids to empty arrays and for update
+
+    if (pageIsExpanded) {
+      Object.values(results).forEach(result => {
+        if (result.event_level === 1) {
+          this.handlePlayToggle(result.event_data.play_uuid);
+        }
+      });
+    } else {
+      this.setState({ collapsedPlayUuids: [], collapsedTaskUuids: [] });
+    }
+  }
+
   rowRenderer({ index, parent, key, style }) {
-    const { results } = this.state;
+    const { results, collapsedTaskUuids, collapsedPlayUuids } = this.state;
 
     const isHostEvent = jobEvent => {
       const { event, event_data, host, type } = jobEvent;
@@ -300,6 +394,40 @@ class JobOutput extends Component {
       return isHost;
     };
 
+    const uuid = results[index]?.uuid;
+    const taskUuid = results[index]?.event_data?.task_uuid;
+    const playUuid = results[index]?.event_data?.play_uuid;
+    const isTaskCollapsed = collapsedTaskUuids.includes(taskUuid);
+    const isPlayCollapsed = collapsedPlayUuids.includes(playUuid);
+
+    let cellContent = null;
+
+    if (!isTaskCollapsed || (uuid === taskUuid && !isPlayCollapsed)) {
+      cellContent = results[index] ? (
+        <JobEvent
+          isClickable={isHostEvent(results[index])}
+          onJobEventClick={() => this.handleHostEventClick(results[index])}
+          className="row"
+          style={style}
+          onTaskToggle={() => this.handleTaskToggle(taskUuid)}
+          onPlayToggle={() => this.handlePlayToggle(playUuid)}
+          isCollapsed={isTaskCollapsed || isPlayCollapsed}
+          {...results[index]}
+        />
+      ) : (
+        <JobEventSkeleton
+          className="row"
+          style={style}
+          counter={index}
+          contentLength={80}
+        />
+      );
+    } else {
+      cellContent = (
+        <div style={{ lineHeight: 1, height: 0, visibility: 'hidden' }} />
+      );
+    }
+
     return (
       <CellMeasurer
         key={key}
@@ -308,22 +436,7 @@ class JobOutput extends Component {
         rowIndex={index}
         columnIndex={0}
       >
-        {results[index] ? (
-          <JobEvent
-            isClickable={isHostEvent(results[index])}
-            onJobEventClick={() => this.handleHostEventClick(results[index])}
-            className="row"
-            style={style}
-            {...results[index]}
-          />
-        ) : (
-          <JobEventSkeleton
-            className="row"
-            style={style}
-            counter={index}
-            contentLength={80}
-          />
-        )}
+        {cellContent}
       </CellMeasurer>
     );
   }
@@ -404,6 +517,7 @@ class JobOutput extends Component {
       hostEvent,
       isHostModalOpen,
       remoteRowCount,
+      isPageCollapsed,
     } = this.state;
 
     if (hasContentLoading) {
@@ -436,6 +550,9 @@ class JobOutput extends Component {
           onScrollLast={this.handleScrollLast}
           onScrollNext={this.handleScrollNext}
           onScrollPrevious={this.handleScrollPrevious}
+          onPlusClick={this.handlePlusClick}
+          onhandlePageToggle={this.handlePageToggle}
+          isPageCollapsed={isPageCollapsed}
         />
         <OutputWrapper>
           <InfiniteLoader

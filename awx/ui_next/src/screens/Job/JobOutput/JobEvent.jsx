@@ -1,5 +1,6 @@
 import Ansi from 'ansi-to-html';
 import hasAnsi from 'has-ansi';
+import { AngleDownIcon, AngleRightIcon } from '@patternfly/react-icons';
 import { AllHtmlEntities } from 'html-entities';
 import React from 'react';
 import {
@@ -83,6 +84,11 @@ function JobEvent({
   start_line,
   style,
   type,
+  event_level,
+  event_data: { task_uuid },
+  isCollapsed = false,
+  onTaskToggle,
+  onPlayToggle,
 }) {
   return !stdout ? null : (
     <div style={style} type={type}>
@@ -95,7 +101,19 @@ function JobEvent({
               isFirst={lineNumber === 0}
               isClickable={isClickable}
             >
-              <JobEventLineToggle />
+              <JobEventLineToggle>
+                {[0, 1, 2].includes(event_level) &&
+                  lineNumber === start_line + 1 &&
+                  (isCollapsed ? (
+                    <AngleRightIcon
+                      onClick={task_uuid ? onTaskToggle : onPlayToggle}
+                    />
+                  ) : (
+                    <AngleDownIcon
+                      onClick={task_uuid ? onTaskToggle : onPlayToggle}
+                    />
+                  ))}
+              </JobEventLineToggle>
               <JobEventLineNumber>{lineNumber}</JobEventLineNumber>
               <JobEventLineText
                 type="job_event_line_text"

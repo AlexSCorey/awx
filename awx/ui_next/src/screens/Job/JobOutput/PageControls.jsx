@@ -5,6 +5,7 @@ import { t } from '@lingui/macro';
 import { Button as PFButton } from '@patternfly/react-core';
 import {
   PlusIcon,
+  MinusIcon,
   AngleDoubleUpIcon,
   AngleDoubleDownIcon,
   AngleUpIcon,
@@ -30,6 +31,8 @@ const PageControls = ({
   onScrollLast,
   onScrollNext,
   onScrollPrevious,
+  onhandlePageToggle,
+  isPageCollapsed,
 }) => (
   <Wrapper>
     <Button
@@ -37,7 +40,11 @@ const PageControls = ({
       variant="plain"
       css="margin-right: auto"
     >
-      <PlusIcon />
+      {isPageCollapsed ? (
+        <PlusIcon onClick={onhandlePageToggle} />
+      ) : (
+        <MinusIcon onClick={onhandlePageToggle} />
+      )}
     </Button>
     <Button
       aria-label={i18n._(t`Scroll previous`)}
