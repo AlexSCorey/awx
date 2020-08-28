@@ -1,28 +1,59 @@
 import 'styled-components/macro';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
+import { Formik, useFormikContext } from 'formik';
+
 import { bool, node, func } from 'prop-types';
 import {
   Button,
   WizardContextConsumer,
   WizardFooter,
+  Form,
 } from '@patternfly/react-core';
+import ContentError from '../../../../../components/ContentError';
+
+import useRequest, {
+  useDismissableError,
+} from '../../../../../util/useRequest';
 import {
   WorkflowDispatchContext,
   WorkflowStateContext,
 } from '../../../../../contexts/Workflow';
+import { JobTemplatesAPI, WorkflowJobTemplatesAPI } from '../../../../../api';
 import Wizard from '../../../../../components/Wizard';
 import { NodeTypeStep } from './NodeTypeStep';
+import useSteps from '../../../../../components/LaunchPrompt/useSteps';
+import AlertModal from '../../../../../components/AlertModal';
+
 import RunStep from './RunStep';
 import NodeNextButton from './NodeNextButton';
 
-function NodeModal({ askLinkType, i18n, onSave, title }) {
+function canLaunchWithoutPrompt(launchData) {
+  return (
+    launchData.can_start_without_user_input &&
+    !launchData.ask_inventory_on_launch &&
+    !launchData.ask_variables_on_launch &&
+    !launchData.ask_limit_on_launch &&
+    !launchData.ask_scm_branch_on_launch &&
+    !launchData.survey_enabled &&
+    (!launchData.variables_needed_to_start ||
+      launchData.variables_needed_to_start.length === 0)
+  );
+}
+
+function NodeModal({ askLinkType, i18n, onSave, title, onValidate }) {
   const history = useHistory();
   const dispatch = useContext(WorkflowDispatchContext);
   const { nodeToEdit } = useContext(WorkflowStateContext);
-
+  const {
+    initialValues,
+    values,
+    resetForm,
+    setTouched,
+    validateForm,
+  } = useFormikContext();
   let defaultApprovalDescription = '';
   let defaultApprovalName = '';
   let defaultApprovalTimeout = 0;
@@ -82,6 +113,37 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
   const [nodeResource, setNodeResource] = useState(defaultNodeResource);
   const [nodeType, setNodeType] = useState(defaultNodeType);
   const [triggerNext, setTriggerNext] = useState(0);
+  const [showPromptSteps, setShowPromptSteps] = useState(false);
+
+  const {
+    request: readLaunchConfig,
+    error: launchConfigError,
+    // isLoading,
+    result: launchConfig,
+  } = useRequest(
+    useCallback(async () => {
+      const readLaunch =
+        nodeResource.type === 'workflow_job_template'
+          ? WorkflowJobTemplatesAPI.readLaunch(nodeResource.id)
+          : JobTemplatesAPI.readLaunch(nodeResource.id);
+
+      const { data } = await readLaunch;
+      if (!canLaunchWithoutPrompt(data)) {
+        setShowPromptSteps(true);
+      }
+      return data;
+    }, [nodeResource]),
+    { launchConfig: {} }
+  );
+
+  useEffect(() => {
+    if (
+      nodeResource?.type === 'workflow_job_template' ||
+      nodeResource?.type === 'job_template'
+    ) {
+      readLaunchConfig();
+    }
+  }, [readLaunchConfig, nodeResource]);
 
   const clearQueryParams = () => {
     const parts = history.location.search.replace(/^\?/, '').split('&');
@@ -92,7 +154,6 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
     );
     history.replace(`${history.location.pathname}?${otherParts.join('&')}`);
   };
-
   const handleSaveNode = () => {
     clearQueryParams();
 
@@ -121,6 +182,27 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
     setApprovalDescription('');
     setApprovalTimeout(0);
   };
+  const {
+    steps: promptSteps,
+    initialValues: promptStepsInitialValues,
+    isReady,
+    validate,
+    visitStep,
+    visitAllSteps,
+    contentError,
+  } = useSteps(launchConfig, nodeResource, i18n);
+
+  useEffect(() => {
+    if (Object.values(promptStepsInitialValues).length > 0) {
+      console.log('here');
+      resetForm({ values: { ...promptStepsInitialValues } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [launchConfig]);
+
+  const { error, dismissError } = useDismissableError(
+    launchConfigError || contentError
+  );
 
   const steps = [
     ...(askLinkType
@@ -156,12 +238,15 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
         />
       ),
     },
+    ...(showPromptSteps && promptSteps.length > 1 && isReady
+      ? [...promptSteps]
+      : []),
   ];
 
   steps.forEach((step, n) => {
     step.id = n + 1;
   });
-
+  console.log(values, 'values');
   const CustomFooter = (
     <WizardFooter>
       <WizardContextConsumer>
@@ -173,7 +258,8 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
               onNext={onNext}
               onClick={() => setTriggerNext(triggerNext + 1)}
               buttonText={
-                activeStep.key === 'node_resource'
+                (activeStep.key === 'node_resource' && steps.length <= 1) ||
+                activeStep.name === 'Preview'
                   ? i18n._(t`Save`)
                   : i18n._(t`Next`)
               }
@@ -198,18 +284,77 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
 
   const wizardTitle = nodeResource ? `${title} | ${nodeResource.name}` : title;
 
+  if (launchConfigError || contentError) {
+    return (
+      <AlertModal
+        isOpen={error}
+        variant="error"
+        title={i18n._(t`Error!`)}
+        onClose={() => {
+          dismissError();
+        }}
+      >
+        <ContentError error={error} />
+      </AlertModal>
+    );
+  }
+
   return (
+    // <Formik
+    //   initialValues={initialValues}
+    //   onSubmit={handleSaveNode}
+    //   validate={validate}
+    // >
+    // {({ validateForm, setTouched, errors }) => (
+    // console.log(initialValues, 'node modal values', errors, 'errors'),
     <Wizard
       footer={CustomFooter}
-      isOpen
+      isOpen={!error || !contentError}
       onClose={handleCancel}
-      onSave={handleSaveNode}
+      onSave={() => {
+        onValidate(validate);
+        handleSaveNode();
+      }}
       steps={steps}
       css="overflow: scroll"
       title={wizardTitle}
+      onNext={async (nextStep, prevStep) => {
+        if (nextStep.id === 'preview') {
+          visitAllSteps(setTouched);
+        } else {
+          visitStep(prevStep.prevId);
+        }
+        await validateForm();
+      }}
     />
+    // )}
+    // </Formik>
   );
 }
+
+const NodeModalForm = ({ onSave, i18n, askLinkType, title }) => {
+  const [validateFn, setValidateFn] = useState(() => {});
+  const onSaveForm = () => {};
+  const validateForm = validate => {
+    console.log('validate', validateFn);
+    setValidateFn(validate);
+  };
+  return (
+    <Formik initialValues={{}} onSave={() => onSaveForm} validate={validateFn}>
+      {formik => (
+        <Form autoComplete="off" onSubmit={formik.handleSubmit}>
+          <NodeModal
+            onSave={() => onSaveForm}
+            i18n={i18n}
+            title={title}
+            onValidate={validateForm}
+            askLinkType={askLinkType}
+          />
+        </Form>
+      )}
+    </Formik>
+  );
+};
 
 NodeModal.propTypes = {
   askLinkType: bool.isRequired,
@@ -217,4 +362,4 @@ NodeModal.propTypes = {
   title: node.isRequired,
 };
 
-export default withI18n()(NodeModal);
+export default withI18n()(NodeModalForm);
