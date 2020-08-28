@@ -49,6 +49,7 @@ function getStep(config, hasErrors, i18n) {
     id: STEP_ID,
     name: <StepName hasErrors={hasErrors}>{i18n._(t`Inventory`)}</StepName>,
     component: <InventoryStep i18n={i18n} />,
+    enableNext: true,
   };
 }
 
