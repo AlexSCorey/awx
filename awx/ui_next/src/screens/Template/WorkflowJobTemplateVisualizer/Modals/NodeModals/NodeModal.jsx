@@ -190,7 +190,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
       resetForm({
         values: {
           ...promptStepsInitialValues,
-          verbosity: promptStepsInitialValues.verbosity.toString(),
+          verbosity: promptStepsInitialValues?.verbosity?.toString(),
         },
       });
     }
