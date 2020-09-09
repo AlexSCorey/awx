@@ -1,5 +1,11 @@
 import 'styled-components/macro';
-import React, { useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import { useHistory } from 'react-router-dom';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
@@ -43,7 +49,22 @@ function canLaunchWithoutPrompt(launchData) {
   );
 }
 
-function NodeModal({ askLinkType, i18n, onSave, title }) {
+function NodeModalForm({
+  askLinkType,
+  i18n,
+  onSave,
+  title,
+  getNodeResource,
+  showPromptSteps,
+  promptSteps,
+  promptStepsInitialValues,
+  isReady,
+  visitStep,
+  visitAllSteps,
+  contentError,
+  error,
+  dismissError,
+}) {
   const history = useHistory();
   const dispatch = useContext(WorkflowDispatchContext);
   const { nodeToEdit } = useContext(WorkflowStateContext);
@@ -107,37 +128,11 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
   const [nodeResource, setNodeResource] = useState(defaultNodeResource);
   const [nodeType, setNodeType] = useState(defaultNodeType);
   const [triggerNext, setTriggerNext] = useState(0);
-  const [showPromptSteps, setShowPromptSteps] = useState(false);
 
-  const {
-    request: readLaunchConfig,
-    error: launchConfigError,
-    // isLoading,
-    result: launchConfig,
-  } = useRequest(
-    useCallback(async () => {
-      const readLaunch =
-        nodeResource.type === 'workflow_job_template'
-          ? WorkflowJobTemplatesAPI.readLaunch(nodeResource.id)
-          : JobTemplatesAPI.readLaunch(nodeResource.id);
-
-      const { data } = await readLaunch;
-      if (!canLaunchWithoutPrompt(data)) {
-        setShowPromptSteps(true);
-      }
-      return data;
-    }, [nodeResource]),
-    { launchConfig: {} }
-  );
-
-  useEffect(() => {
-    if (
-      nodeResource?.type === 'workflow_job_template' ||
-      nodeResource?.type === 'job_template'
-    ) {
-      readLaunchConfig();
-    }
-  }, [readLaunchConfig, nodeResource]);
+  useEffect(() => getNodeResource(nodeResource), [
+    nodeResource,
+    getNodeResource,
+  ]);
 
   const clearQueryParams = () => {
     const parts = history.location.search.replace(/^\?/, '').split('&');
@@ -175,17 +170,8 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
     setApprovalDescription('');
     setApprovalTimeout(0);
   };
-  const {
-    steps: promptSteps,
-    initialValues: promptStepsInitialValues,
-    isReady,
-    validate,
-    visitStep,
-    visitAllSteps,
-    contentError,
-  } = useSteps(launchConfig, nodeResource, i18n);
 
-  useEffect(() => {
+  useMemo(() => {
     if (Object.values(promptStepsInitialValues).length > 0) {
       resetForm({
         values: {
@@ -195,11 +181,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [launchConfig]);
-
-  const { error, dismissError } = useDismissableError(
-    launchConfigError || contentError
-  );
+  }, [promptSteps.length]);
 
   const steps = [
     ...(askLinkType
@@ -211,6 +193,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
               <RunStep linkType={linkType} onUpdateLinkType={setLinkType} />
             ),
             enableNext: linkType !== null,
+            id: 'runType',
           },
         ]
       : []),
@@ -234,15 +217,13 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
           timeout={approvalTimeout}
         />
       ),
+      id: 'nodeType',
     },
     ...(showPromptSteps && promptSteps.length > 1 && isReady
       ? [...promptSteps]
       : []),
   ];
 
-  steps.forEach((step, n) => {
-    step.id = n + 1;
-  });
   const CustomFooter = (
     <WizardFooter>
       <WizardContextConsumer>
@@ -252,7 +233,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
               triggerNext={triggerNext}
               activeStep={activeStep}
               onNext={onNext}
-              onClick={() => setTriggerNext(triggerNext + 1)}
+              onClick={() => setTriggerNext(activeStep.id)}
               buttonText={
                 (activeStep.key === 'node_resource' && steps.length <= 1) ||
                 activeStep.name === 'Preview'
@@ -260,7 +241,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
                   : i18n._(t`Next`)
               }
             />
-            {activeStep && activeStep.id !== 1 && (
+            {activeStep && activeStep.id !== 'runType' && (
               <Button id="back-node-modal" variant="secondary" onClick={onBack}>
                 {i18n._(t`Back`)}
               </Button>
@@ -280,7 +261,7 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
 
   const wizardTitle = nodeResource ? `${title} | ${nodeResource.name}` : title;
 
-  if (launchConfigError || contentError) {
+  if (error) {
     return (
       <AlertModal
         isOpen={error}
@@ -301,7 +282,6 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
       onClose={handleCancel}
       onSave={() => {
         handleSaveNode();
-        validate(values);
       }}
       steps={steps}
       css="overflow: scroll"
@@ -318,20 +298,78 @@ function NodeModal({ askLinkType, i18n, onSave, title }) {
   );
 }
 
-const NodeModalForm = ({ onSave, i18n, askLinkType, title }) => {
+const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
   const onSaveForm = (resource, linkType, values) => {
     onSave(resource, linkType, values);
   };
+  const [resource, setResource] = useState(null);
+  const [showPromptSteps, setShowPromptSteps] = useState(false);
+
+  const {
+    request: readLaunchConfig,
+    error: launchConfigError,
+    result: launchConfig,
+  } = useRequest(
+    useCallback(async () => {
+      const readLaunch =
+        resource.type === 'workflow_job_template'
+          ? WorkflowJobTemplatesAPI.readLaunch(resource.id)
+          : JobTemplatesAPI.readLaunch(resource.id);
+
+      const { data } = await readLaunch;
+      if (!canLaunchWithoutPrompt(data)) {
+        setShowPromptSteps(true);
+      }
+      return data;
+    }, [resource]),
+    { launchConfig: {} }
+  );
+
+  useEffect(() => {
+    if (
+      resource?.type === 'workflow_job_template' ||
+      resource?.type === 'job_template'
+    ) {
+      readLaunchConfig();
+    }
+  }, [readLaunchConfig, resource]);
+
+  const {
+    steps: promptSteps,
+    initialValues: promptStepsInitialValues,
+    isReady,
+    validate,
+    visitStep,
+    visitAllSteps,
+    contentError,
+  } = useSteps(launchConfig, resource, i18n);
+  const { error, dismissError } = useDismissableError(
+    launchConfigError || contentError
+  );
 
   return (
-    <Formik initialValues={{}} onSave={() => onSaveForm}>
+    <Formik
+      initialValues={promptStepsInitialValues}
+      onSave={() => onSaveForm}
+      validate={validate}
+    >
       {formik => (
         <Form autoComplete="off" onSubmit={formik.handleSubmit}>
-          <NodeModal
+          <NodeModalForm
             onSave={onSaveForm}
             i18n={i18n}
             title={title}
             askLinkType={askLinkType}
+            promptSteps={promptSteps}
+            promptStepsInitialValues={promptStepsInitialValues}
+            isReady={isReady}
+            visitStep={visitStep}
+            visitAllSteps={visitAllSteps}
+            contentError={contentError}
+            getNodeResource={res => setResource(res)}
+            showPromptSteps={showPromptSteps}
+            error={error}
+            dismissError={dismissError}
           />
         </Form>
       )}
@@ -345,4 +383,4 @@ NodeModal.propTypes = {
   title: node.isRequired,
 };
 
-export default withI18n()(NodeModalForm);
+export default withI18n()(NodeModal);
