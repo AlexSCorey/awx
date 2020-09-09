@@ -110,12 +110,15 @@ function getInitialValues(config, survey) {
     return {};
   }
   const values = {};
-  survey.spec.forEach(question => {
-    if (question.type === 'multiselect') {
-      values[`survey_${question.variable}`] = question.default.split('\n');
-    } else {
-      values[`survey_${question.variable}`] = question.default;
-    }
-  });
+  if (survey && survey.spec) {
+    survey.spec.forEach(question => {
+      if (question.type === 'multiselect') {
+        values[`survey_${question.variable}`] = question.default.split('\n');
+      } else {
+        values[`survey_${question.variable}`] = question.default;
+      }
+    });
+  }
+
   return values;
 }
