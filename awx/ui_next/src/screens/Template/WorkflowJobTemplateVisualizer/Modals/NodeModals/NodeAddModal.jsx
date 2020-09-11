@@ -13,20 +13,30 @@ function NodeAddModal({ i18n }) {
   const { addNodeSource } = useContext(WorkflowStateContext);
 
   const addNode = (resource, linkType, values) => {
-    const { added, removed } = getAddedAndRemoved(
-      resource.summary_fields.credentials,
-      values.credentials
-    );
-    values.inventory = values?.inventory?.id;
-    values.addedCredentials = added.map(cred => cred.id);
-    values.removedCredentials = removed.map(cred => cred.id);
+    if (values) {
+      const { added, removed } = getAddedAndRemoved(
+        resource?.summary_fields?.credentials,
+        values?.credentials
+      );
+
+      values.inventory = values?.inventory?.id;
+      values.addedCredentials = added?.map(cred => cred.id);
+      values.removedCredentials = removed?.map(cred => cred.id);
+    }
+    const node = {
+      linkType,
+      nodeResource: resource,
+    };
+    if (
+      values &&
+      (resource.type === 'job_template' ||
+        resource.type === 'workflow_job_template')
+    ) {
+      node.promptValues = values;
+    }
     dispatch({
       type: 'CREATE_NODE',
-      node: {
-        linkType,
-        nodeResource: resource,
-        promptValues: values,
-      },
+      node,
     });
   };
 

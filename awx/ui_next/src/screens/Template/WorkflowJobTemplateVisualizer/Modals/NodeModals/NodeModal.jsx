@@ -1,11 +1,5 @@
 import 'styled-components/macro';
-import React, {
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
@@ -171,7 +165,7 @@ function NodeModalForm({
     setApprovalTimeout(0);
   };
 
-  useMemo(() => {
+  useEffect(() => {
     if (Object.values(promptStepsInitialValues).length > 0) {
       resetForm({
         values: {
@@ -188,7 +182,7 @@ function NodeModalForm({
       ? [
           {
             name: i18n._(t`Run Type`),
-            key: 'run_type',
+            key: 1,
             component: (
               <RunStep linkType={linkType} onUpdateLinkType={setLinkType} />
             ),
@@ -199,10 +193,11 @@ function NodeModalForm({
       : []),
     {
       name: i18n._(t`Node Type`),
-      key: 'node_resource',
+      key: 2,
       enableNext:
-        (nodeType !== 'approval' && nodeResource !== null) ||
-        (nodeType === 'approval' && approvalName !== ''),
+        isReady &&
+        ((nodeType !== 'approval' && nodeResource !== null) ||
+          (nodeType === 'approval' && approvalName !== '')),
       component: (
         <NodeTypeStep
           description={approvalDescription}
@@ -309,6 +304,7 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
     request: readLaunchConfig,
     error: launchConfigError,
     result: launchConfig,
+    isLoading,
   } = useRequest(
     useCallback(async () => {
       const readLaunch =
@@ -322,7 +318,7 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
       }
       return data;
     }, [resource]),
-    { launchConfig: {} }
+    {}
   );
 
   useEffect(() => {
@@ -347,6 +343,14 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
     launchConfigError || contentError
   );
 
+  let ready =
+    Object.values(launchConfig).length > 0 && resource && isReady && !isLoading;
+  if (
+    resource?.type !== 'workflow_job_template' &&
+    resource?.type !== 'job_template'
+  ) {
+    ready = true;
+  }
   return (
     <Formik
       initialValues={promptStepsInitialValues}
@@ -362,7 +366,7 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
             askLinkType={askLinkType}
             promptSteps={promptSteps}
             promptStepsInitialValues={promptStepsInitialValues}
-            isReady={isReady}
+            isReady={ready}
             visitStep={visitStep}
             visitAllSteps={visitAllSteps}
             contentError={contentError}
