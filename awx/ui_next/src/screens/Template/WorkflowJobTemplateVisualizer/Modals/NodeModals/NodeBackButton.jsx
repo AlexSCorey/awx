@@ -1,23 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { func, oneOfType, number, shape, string } from 'prop-types';
 import { Button } from '@patternfly/react-core';
 
-function NodeNextButton({
+function NodeBackButton({
   activeStep,
   buttonText,
   onClick,
-  onNext,
+  onBack,
   triggerNext,
 }) {
-  const [next, setNext] = useState(0);
-  // console.log(next, triggerNext, 'next');
   useEffect(() => {
-    if (!triggerNext) {
+    if (
+      !triggerNext ||
+      (triggerNext === activeStep.key && activeStep.key > 0)
+    ) {
       return;
     }
-    setNext(triggerNext);
-    onNext();
-  }, [onNext, triggerNext]);
+    console.log(triggerNext, activeStep.key, 'back');
+    onBack();
+  }, [onBack, triggerNext]);
 
   return (
     <Button
@@ -32,12 +33,12 @@ function NodeNextButton({
   );
 }
 
-NodeNextButton.propTypes = {
+NodeBackButton.propTypes = {
   activeStep: shape().isRequired,
   buttonText: string.isRequired,
   onClick: func.isRequired,
-  onNext: func.isRequired,
+  onBack: func.isRequired,
   triggerNext: oneOfType([string, number]).isRequired,
 };
 
-export default NodeNextButton;
+export default NodeBackButton;

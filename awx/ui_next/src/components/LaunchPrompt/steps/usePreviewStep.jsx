@@ -14,6 +14,7 @@ export default function usePreviewStep(
   return {
     step: {
       id: STEP_ID,
+      key: 7,
       name: i18n._(t`Preview`),
       component: (
         <PreviewStep

@@ -35,6 +35,7 @@ function getStep(config, i18n) {
   }
   return {
     id: STEP_ID,
+    key: 4,
     name: i18n._(t`Credentials`),
     component: <CredentialsStep i18n={i18n} />,
     enableNext: true,

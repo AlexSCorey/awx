@@ -579,16 +579,9 @@ describe('NodeModal', () => {
       await act(async () => newWrapper.find('Radio').simulate('click'));
       newWrapper.update();
 
-      // await waitForElement(
-      //   newWrapper,
-      //   'button#next-node-modal',
-      //   el => el.prop('isDisabled') === true
-      // );
-
       await act(async () => {
         newWrapper.find('button#next-node-modal').simulate('click');
       });
-
       expect(onSave).toBeCalledWith(
         {
           id: 1,

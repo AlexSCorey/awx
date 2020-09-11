@@ -99,6 +99,7 @@ function getStep(config, survey, hasErrors, i18n) {
   }
   return {
     id: STEP_ID,
+    key: 6,
     name: <StepName hasErrors={hasErrors}>{i18n._(t`Survey`)}</StepName>,
     component: <SurveyStep survey={survey} i18n={i18n} />,
     enableNext: true,

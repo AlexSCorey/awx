@@ -29,6 +29,7 @@ import AlertModal from '../../../../../components/AlertModal';
 
 import RunStep from './RunStep';
 import NodeNextButton from './NodeNextButton';
+import NodeBackButton from './NodeBackButton';
 
 function canLaunchWithoutPrompt(launchData) {
   return (
@@ -224,22 +225,49 @@ function NodeModalForm({
       <WizardContextConsumer>
         {({ activeStep, onNext, onBack }) => (
           <>
+            {console.log(activeStep.key, triggerNext, 'trigger')}
             <NodeNextButton
               triggerNext={triggerNext}
               activeStep={activeStep}
               onNext={onNext}
-              onClick={() => setTriggerNext(activeStep.id)}
+              onClick={() => {
+                // console.log(activeStep.key, 'here');
+                setTriggerNext(activeStep.key);
+              }}
               buttonText={
-                (activeStep.key === 'node_resource' && steps.length <= 1) ||
+                (activeStep.key === 'node_resource' && steps.length <= 2) ||
                 activeStep.name === 'Preview'
                   ? i18n._(t`Save`)
                   : i18n._(t`Next`)
               }
             />
             {activeStep && activeStep.id !== 'runType' && (
-              <Button id="back-node-modal" variant="secondary" onClick={onBack}>
+              <Button
+                id="back-node-modal"
+                variant="secondary"
+                onClick={() => {
+                  setTriggerNext(activeStep.key - 1);
+                  onBack({ id: activeStep.key }, { id: triggerNext });
+                }}
+              >
                 {i18n._(t`Back`)}
               </Button>
+              // <NodeBackButton
+              //   id="back-node-modal"
+              //   variant="secondary"
+              //   activeStep={activeStep}
+              //   triggerNext={triggerNext}
+              //   onBack={onBack}
+              //   buttonText={i18n._(t`Back`)}
+              //   onClick={() => {
+              //     const index = steps.findIndex(
+              //       step => step.id === activeStep.id
+              //     );
+              //     setTriggerNext(activeStep.key - 1);
+              //   }}
+              // />
+              //   {i18n._(t`Back`)}
+              // </Button>
             )}
             <Button
               id="cancel-node-modal"

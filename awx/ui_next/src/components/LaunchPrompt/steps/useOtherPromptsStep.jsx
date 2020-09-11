@@ -46,6 +46,7 @@ function getStep(config, hasErrors, i18n) {
   }
   return {
     id: STEP_ID,
+    key: 5,
     name: <StepName hasErrors={hasErrors}>{i18n._(t`Other Prompts`)}</StepName>,
     component: <OtherPromptsStep config={config} i18n={i18n} />,
     enableNext: true,
