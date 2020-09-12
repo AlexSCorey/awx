@@ -1,38 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { t } from '@lingui/macro';
+import { useField } from 'formik';
 import InventoryStep from './InventoryStep';
 import StepName from './StepName';
 
 const STEP_ID = 'inventory';
 
 export default function useInventoryStep(config, resource, visitedSteps, i18n) {
-  const [stepErrors, setStepErrors] = useState({});
-
-  const validate = values => {
-    if (
-      !config.ask_inventory_on_launch ||
-      (['workflow_job', 'workflow_job_template'].includes(resource.type) &&
-        !resource.inventory)
-    ) {
-      return {};
-    }
-    const errors = {};
-    if (!values.inventory) {
-      errors.inventory = i18n._(t`An inventory must be selected`);
-    }
-    setStepErrors(errors);
-    return errors;
-  };
-
-  const hasErrors = visitedSteps[STEP_ID] && Object.keys(stepErrors).length > 0;
+  const [, meta] = useField('inventory');
 
   return {
-    step: getStep(config, hasErrors, i18n),
+    step: getStep(config, meta, i18n, visitedSteps),
     initialValues: getInitialValues(config, resource),
-    validate,
     isReady: true,
     contentError: null,
-    formError: stepErrors,
+    formError: meta.error,
     setTouched: setFieldsTouched => {
       setFieldsTouched({
         inventory: true,
@@ -40,15 +22,23 @@ export default function useInventoryStep(config, resource, visitedSteps, i18n) {
     },
   };
 }
-
-function getStep(config, hasErrors, i18n) {
+function getStep(config, meta, i18n, visitedSteps) {
   if (!config.ask_inventory_on_launch) {
     return null;
   }
   return {
     id: STEP_ID,
     key: 3,
-    name: <StepName hasErrors={hasErrors}>{i18n._(t`Inventory`)}</StepName>,
+    name: (
+      <StepName
+        hasErrors={
+          Object.keys(visitedSteps).includes(STEP_ID) &&
+          (!meta.value || meta.error)
+        }
+      >
+        {i18n._(t`Inventory`)}
+      </StepName>
+    ),
     component: <InventoryStep i18n={i18n} />,
     enableNext: true,
   };

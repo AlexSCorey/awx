@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { func, oneOfType, number, shape, string } from 'prop-types';
 import { Button } from '@patternfly/react-core';
 
@@ -9,13 +9,10 @@ function NodeNextButton({
   onNext,
   triggerNext,
 }) {
-  const [next, setNext] = useState(0);
-  // console.log(next, triggerNext, 'next');
   useEffect(() => {
     if (!triggerNext) {
       return;
     }
-    setNext(triggerNext);
     onNext();
   }, [onNext, triggerNext]);
 

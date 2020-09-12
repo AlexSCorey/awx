@@ -29,7 +29,6 @@ import AlertModal from '../../../../../components/AlertModal';
 
 import RunStep from './RunStep';
 import NodeNextButton from './NodeNextButton';
-import NodeBackButton from './NodeBackButton';
 
 function canLaunchWithoutPrompt(launchData) {
   return (
@@ -44,22 +43,7 @@ function canLaunchWithoutPrompt(launchData) {
   );
 }
 
-function NodeModalForm({
-  askLinkType,
-  i18n,
-  onSave,
-  title,
-  getNodeResource,
-  showPromptSteps,
-  promptSteps,
-  promptStepsInitialValues,
-  isReady,
-  visitStep,
-  visitAllSteps,
-  contentError,
-  error,
-  dismissError,
-}) {
+function NodeModalForm({ askLinkType, i18n, onSave, title }) {
   const history = useHistory();
   const dispatch = useContext(WorkflowDispatchContext);
   const { nodeToEdit } = useContext(WorkflowStateContext);
@@ -123,11 +107,7 @@ function NodeModalForm({
   const [nodeResource, setNodeResource] = useState(defaultNodeResource);
   const [nodeType, setNodeType] = useState(defaultNodeType);
   const [triggerNext, setTriggerNext] = useState(0);
-
-  useEffect(() => getNodeResource(nodeResource), [
-    nodeResource,
-    getNodeResource,
-  ]);
+  const [showPromptSteps, setShowPromptSteps] = useState(false);
 
   const clearQueryParams = () => {
     const parts = history.location.search.replace(/^\?/, '').split('&');
@@ -138,6 +118,37 @@ function NodeModalForm({
     );
     history.replace(`${history.location.pathname}?${otherParts.join('&')}`);
   };
+
+  const {
+    request: readLaunchConfig,
+    error: launchConfigError,
+    result: launchConfig,
+    isLoading,
+  } = useRequest(
+    useCallback(async () => {
+      const readLaunch =
+        nodeResource.type === 'workflow_job_template'
+          ? WorkflowJobTemplatesAPI.readLaunch(nodeResource.id)
+          : JobTemplatesAPI.readLaunch(nodeResource.id);
+
+      const { data } = await readLaunch;
+      if (!canLaunchWithoutPrompt(data)) {
+        setShowPromptSteps(true);
+      }
+      return data;
+    }, [nodeResource]),
+    {}
+  );
+
+  useEffect(() => {
+    if (
+      nodeResource?.type === 'workflow_job_template' ||
+      nodeResource?.type === 'job_template'
+    ) {
+      readLaunchConfig();
+    }
+  }, [readLaunchConfig, nodeResource]);
+
   const handleSaveNode = () => {
     clearQueryParams();
 
@@ -150,6 +161,7 @@ function NodeModalForm({
             type: 'workflow_approval_template',
           }
         : nodeResource;
+
     onSave(resource, askLinkType ? linkType : null, values);
   };
 
@@ -166,8 +178,33 @@ function NodeModalForm({
     setApprovalTimeout(0);
   };
 
+  const {
+    steps: promptSteps,
+    initialValues: promptStepsInitialValues,
+    isReady,
+    // validate,
+    visitStep,
+    visitAllSteps,
+    contentError,
+  } = useSteps(launchConfig, nodeResource, i18n, triggerNext);
+  const { error, dismissError } = useDismissableError(
+    launchConfigError || contentError
+  );
+
+  let ready =
+    Object.values(launchConfig).length > 0 &&
+    nodeResource &&
+    isReady &&
+    !isLoading;
+  if (
+    nodeResource?.type !== 'workflow_job_template' &&
+    nodeResource?.type !== 'job_template'
+  ) {
+    ready = true;
+  }
+
   useEffect(() => {
-    if (Object.values(promptStepsInitialValues).length > 0) {
+    if (Object.values(promptStepsInitialValues).length > 0 && isReady) {
       resetForm({
         values: {
           ...promptStepsInitialValues,
@@ -176,27 +213,25 @@ function NodeModalForm({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [promptSteps.length]);
+  }, [promptSteps.length, isReady]);
 
   const steps = [
     ...(askLinkType
       ? [
           {
             name: i18n._(t`Run Type`),
-            key: 1,
             component: (
               <RunStep linkType={linkType} onUpdateLinkType={setLinkType} />
             ),
             enableNext: linkType !== null,
-            id: 'runType',
           },
         ]
       : []),
     {
       name: i18n._(t`Node Type`),
-      key: 2,
+      canJumpTo: triggerNext >= 2,
       enableNext:
-        isReady &&
+        ready &&
         ((nodeType !== 'approval' && nodeResource !== null) ||
           (nodeType === 'approval' && approvalName !== '')),
       component: (
@@ -213,9 +248,8 @@ function NodeModalForm({
           timeout={approvalTimeout}
         />
       ),
-      id: 'nodeType',
     },
-    ...(showPromptSteps && promptSteps.length > 1 && isReady
+    ...(showPromptSteps && promptSteps.length > 1 && ready
       ? [...promptSteps]
       : []),
   ];
@@ -225,15 +259,11 @@ function NodeModalForm({
       <WizardContextConsumer>
         {({ activeStep, onNext, onBack }) => (
           <>
-            {console.log(activeStep.key, triggerNext, 'trigger')}
             <NodeNextButton
               triggerNext={triggerNext}
               activeStep={activeStep}
               onNext={onNext}
-              onClick={() => {
-                // console.log(activeStep.key, 'here');
-                setTriggerNext(activeStep.key);
-              }}
+              onClick={() => setTriggerNext(triggerNext + 1)}
               buttonText={
                 (activeStep.key === 'node_resource' && steps.length <= 2) ||
                 activeStep.name === 'Preview'
@@ -242,32 +272,9 @@ function NodeModalForm({
               }
             />
             {activeStep && activeStep.id !== 'runType' && (
-              <Button
-                id="back-node-modal"
-                variant="secondary"
-                onClick={() => {
-                  setTriggerNext(activeStep.key - 1);
-                  onBack({ id: activeStep.key }, { id: triggerNext });
-                }}
-              >
+              <Button id="back-node-modal" variant="secondary" onClick={onBack}>
                 {i18n._(t`Back`)}
               </Button>
-              // <NodeBackButton
-              //   id="back-node-modal"
-              //   variant="secondary"
-              //   activeStep={activeStep}
-              //   triggerNext={triggerNext}
-              //   onBack={onBack}
-              //   buttonText={i18n._(t`Back`)}
-              //   onClick={() => {
-              //     const index = steps.findIndex(
-              //       step => step.id === activeStep.id
-              //     );
-              //     setTriggerNext(activeStep.key - 1);
-              //   }}
-              // />
-              //   {i18n._(t`Back`)}
-              // </Button>
             )}
             <Button
               id="cancel-node-modal"
@@ -325,66 +332,8 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
   const onSaveForm = (resource, linkType, values) => {
     onSave(resource, linkType, values);
   };
-  const [resource, setResource] = useState(null);
-  const [showPromptSteps, setShowPromptSteps] = useState(false);
-
-  const {
-    request: readLaunchConfig,
-    error: launchConfigError,
-    result: launchConfig,
-    isLoading,
-  } = useRequest(
-    useCallback(async () => {
-      const readLaunch =
-        resource.type === 'workflow_job_template'
-          ? WorkflowJobTemplatesAPI.readLaunch(resource.id)
-          : JobTemplatesAPI.readLaunch(resource.id);
-
-      const { data } = await readLaunch;
-      if (!canLaunchWithoutPrompt(data)) {
-        setShowPromptSteps(true);
-      }
-      return data;
-    }, [resource]),
-    {}
-  );
-
-  useEffect(() => {
-    if (
-      resource?.type === 'workflow_job_template' ||
-      resource?.type === 'job_template'
-    ) {
-      readLaunchConfig();
-    }
-  }, [readLaunchConfig, resource]);
-
-  const {
-    steps: promptSteps,
-    initialValues: promptStepsInitialValues,
-    isReady,
-    validate,
-    visitStep,
-    visitAllSteps,
-    contentError,
-  } = useSteps(launchConfig, resource, i18n);
-  const { error, dismissError } = useDismissableError(
-    launchConfigError || contentError
-  );
-
-  let ready =
-    Object.values(launchConfig).length > 0 && resource && isReady && !isLoading;
-  if (
-    resource?.type !== 'workflow_job_template' &&
-    resource?.type !== 'job_template'
-  ) {
-    ready = true;
-  }
   return (
-    <Formik
-      initialValues={promptStepsInitialValues}
-      onSave={() => onSaveForm}
-      validate={validate}
-    >
+    <Formik initialValues={{}} onSave={() => onSaveForm}>
       {formik => (
         <Form autoComplete="off" onSubmit={formik.handleSubmit}>
           <NodeModalForm
@@ -392,16 +341,6 @@ const NodeModal = ({ onSave, i18n, askLinkType, title }) => {
             i18n={i18n}
             title={title}
             askLinkType={askLinkType}
-            promptSteps={promptSteps}
-            promptStepsInitialValues={promptStepsInitialValues}
-            isReady={ready}
-            visitStep={visitStep}
-            visitAllSteps={visitAllSteps}
-            contentError={contentError}
-            getNodeResource={res => setResource(res)}
-            showPromptSteps={showPromptSteps}
-            error={error}
-            dismissError={dismissError}
           />
         </Form>
       )}

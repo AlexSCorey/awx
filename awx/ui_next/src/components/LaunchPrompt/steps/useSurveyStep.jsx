@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { t } from '@lingui/macro';
+import { useFormikContext } from 'formik';
 import useRequest from '../../../util/useRequest';
 import { JobTemplatesAPI, WorkflowJobTemplatesAPI } from '../../../api';
 import SurveyStep from './SurveyStep';
@@ -8,8 +9,7 @@ import StepName from './StepName';
 const STEP_ID = 'survey';
 
 export default function useSurveyStep(config, resource, visitedSteps, i18n) {
-  const [stepErrors, setStepErrors] = useState({});
-
+  const { values } = useFormikContext();
   const { result: survey, request: fetchSurvey, isLoading, error } = useRequest(
     useCallback(async () => {
       if (!config.survey_enabled) {
@@ -27,11 +27,11 @@ export default function useSurveyStep(config, resource, visitedSteps, i18n) {
     fetchSurvey();
   }, [fetchSurvey]);
 
-  const validate = values => {
+  const errors = {};
+  const validate = () => {
     if (!config.survey_enabled || !survey || !survey.spec) {
       return {};
     }
-    const errors = {};
     survey.spec.forEach(question => {
       const errMessage = validateField(
         question,
@@ -42,20 +42,17 @@ export default function useSurveyStep(config, resource, visitedSteps, i18n) {
         errors[`survey_${question.variable}`] = errMessage;
       }
     });
-    setStepErrors(errors);
     return errors;
   };
 
-  const hasErrors = visitedSteps[STEP_ID] && Object.keys(stepErrors).length > 0;
-
   return {
-    step: getStep(config, survey, hasErrors, i18n),
+    step: getStep(config, survey, validate, i18n, visitedSteps),
     initialValues: getInitialValues(config, survey),
     validate,
     survey,
     isReady: !isLoading && !!survey,
     contentError: error,
-    formError: stepErrors,
+    formError: validate(),
     setTouched: setFieldsTouched => {
       if (!survey || !survey.spec) {
         return;
@@ -92,15 +89,24 @@ function validateField(question, value, i18n) {
   }
   return null;
 }
-
-function getStep(config, survey, hasErrors, i18n) {
+function getStep(config, survey, validate, i18n, visitedSteps) {
   if (!config.survey_enabled) {
     return null;
   }
+
   return {
     id: STEP_ID,
     key: 6,
-    name: <StepName hasErrors={hasErrors}>{i18n._(t`Survey`)}</StepName>,
+    name: (
+      <StepName
+        hasErrors={
+          Object.keys(visitedSteps).includes(STEP_ID) &&
+          Object.keys(validate()).length
+        }
+      >
+        {i18n._(t`Survey`)}
+      </StepName>
+    ),
     component: <SurveyStep survey={survey} i18n={i18n} />,
     enableNext: true,
   };

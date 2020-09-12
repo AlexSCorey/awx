@@ -1,4 +1,9 @@
-import { useState } from 'react';
+import {
+  useState
+} from 'react';
+import {
+  useFormikContext
+} from 'formik'
 import useInventoryStep from './steps/useInventoryStep';
 import useCredentialsStep from './steps/useCredentialsStep';
 import useOtherPromptsStep from './steps/useOtherPromptsStep';
@@ -13,10 +18,23 @@ export default function useSteps(config, resource, i18n) {
     useOtherPromptsStep(config, resource, visited, i18n),
     useSurveyStep(config, resource, visited, i18n),
   ];
+  const {
+    values: formikValues
+  } = useFormikContext()
+  const formErrorsContent = []
 
-  const formErrorsContent = steps
-    .filter(s => s?.formError && Object.keys(s.formError).length > 0)
-    .map(({ formError }) => formError);
+  if (config.ask_inventory_on_launch && !formikValues.inventory) {
+    formErrorsContent.push({
+      inventory: true
+    })
+  }
+  if (!config.survey_enabled &&
+    (!config.variables_needed_to_start ||
+      config.variables_needed_to_start.length === 0)) {
+    formErrorsContent.push({
+      survey: true
+    })
+  }
 
   steps.push(
     usePreviewStep(config, resource, steps[3].survey, formErrorsContent, i18n)
@@ -52,7 +70,10 @@ export default function useSteps(config, resource, i18n) {
     initialValues,
     isReady,
     validate,
-    visitStep: stepId => setVisited({ ...visited, [stepId]: true }),
+    visitStep: stepId => setVisited({
+      ...visited,
+      [stepId]: true
+    }),
     visitAllSteps: setFieldsTouched => {
       setVisited({
         inventory: true,
