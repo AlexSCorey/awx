@@ -24,7 +24,7 @@ import {
 import { JobTemplatesAPI, WorkflowJobTemplatesAPI } from '../../../../../api';
 import Wizard from '../../../../../components/Wizard';
 import { NodeTypeStep } from './NodeTypeStep';
-import useSteps from '../../../../../components/LaunchPrompt/useSteps';
+import useSteps from './LaunchPrompt/useSteps';
 import AlertModal from '../../../../../components/AlertModal';
 
 import RunStep from './RunStep';
