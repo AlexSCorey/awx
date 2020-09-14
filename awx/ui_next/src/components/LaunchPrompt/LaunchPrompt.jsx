@@ -1,33 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Wizard } from '@patternfly/react-core';
 import { withI18n } from '@lingui/react';
 import { t } from '@lingui/macro';
-import { Formik } from 'formik';
+import { Formik, useFormikContext } from 'formik';
 import ContentError from '../ContentError';
 import ContentLoading from '../ContentLoading';
 import mergeExtraVars from './mergeExtraVars';
 import useSteps from './useSteps';
 import getSurveyValues from './getSurveyValues';
 
-function LaunchPrompt({ config, resource, onLaunch, onCancel, i18n }) {
+function PromptModalForm({ onSubmit, onCancel, i18n, config, resource }) {
+  const { values, resetForm, setTouched, validateForm } = useFormikContext();
+
   const {
     steps,
     initialValues,
     isReady,
-    validate,
     visitStep,
     visitAllSteps,
     contentError,
   } = useSteps(config, resource, i18n);
+  useEffect(() => {
+    if (Object.values(initialValues).length > 0 && isReady) {
+      resetForm({
+        values: {
+          ...initialValues,
+          verbosity: initialValues?.verbosity?.toString(),
+        },
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps.length, isReady]);
 
-  if (contentError) {
-    return <ContentError error={contentError} />;
-  }
-  if (!isReady) {
-    return <ContentLoading />;
-  }
-
-  const submit = values => {
+  const handleSave = () => {
     const postValues = {};
     const setValue = (key, value) => {
       if (typeof value !== 'undefined' && value !== null) {
@@ -49,39 +54,56 @@ function LaunchPrompt({ config, resource, onLaunch, onCancel, i18n }) {
       : resource.extra_vars;
     setValue('extra_vars', mergeExtraVars(extraVars, surveyValues));
     setValue('scm_branch', values.scm_branch);
-    onLaunch(postValues);
+
+    onSubmit(postValues);
   };
 
+  if (contentError) {
+    return <ContentError error={contentError} />;
+  }
+  if (!isReady) {
+    return <ContentLoading />;
+  }
   return (
-    <Formik initialValues={initialValues} onSubmit={submit} validate={validate}>
-      {({ validateForm, setTouched, handleSubmit }) => (
-        <Wizard
-          isOpen
-          onClose={onCancel}
-          onSave={handleSubmit}
-          onNext={async (nextStep, prevStep) => {
-            if (nextStep.id === 'preview') {
-              visitAllSteps(setTouched);
-            } else {
-              visitStep(prevStep.prevId);
-            }
-            await validateForm();
-          }}
-          onGoToStep={async (newStep, prevStep) => {
-            if (newStep.id === 'preview') {
-              visitAllSteps(setTouched);
-            } else {
-              visitStep(prevStep.prevId);
-            }
-            await validateForm();
-          }}
-          title={i18n._(t`Prompts`)}
-          steps={steps}
-          backButtonText={i18n._(t`Back`)}
-          cancelButtonText={i18n._(t`Cancel`)}
-          nextButtonText={i18n._(t`Next`)}
-        />
-      )}
+    <Wizard
+      isOpen
+      onClose={onCancel}
+      onSave={handleSave}
+      onNext={async (nextStep, prevStep) => {
+        if (nextStep.id === 'preview') {
+          visitAllSteps(setTouched);
+        } else {
+          visitStep(prevStep.prevId);
+        }
+        await validateForm();
+      }}
+      onGoToStep={async (nextStep, prevStep) => {
+        if (nextStep.id === 'preview') {
+          visitAllSteps(setTouched);
+        } else {
+          visitStep(prevStep.prevId);
+        }
+        await validateForm();
+      }}
+      title={i18n._(t`Prompts`)}
+      steps={steps}
+      backButtonText={i18n._(t`Back`)}
+      cancelButtonText={i18n._(t`Cancel`)}
+      nextButtonText={i18n._(t`Next`)}
+    />
+  );
+}
+
+function LaunchPrompt({ config, resource, onLaunch, onCancel, i18n }) {
+  return (
+    <Formik initialValues={{}} onSubmit={values => onLaunch(values)}>
+      <PromptModalForm
+        onSubmit={values => onLaunch(values)}
+        onCancel={onCancel}
+        i18n={i18n}
+        config={config}
+        resource={resource}
+      />
     </Formik>
   );
 }

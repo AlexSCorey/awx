@@ -19,7 +19,8 @@ export default function useSteps(config, resource, i18n) {
     useSurveyStep(config, resource, visited, i18n),
   ];
   const {
-    values: formikValues
+    values: formikValues,
+    errors
   } = useFormikContext()
   const formErrorsContent = []
 
@@ -28,9 +29,11 @@ export default function useSteps(config, resource, i18n) {
       inventory: true
     })
   }
-  if (!config.survey_enabled &&
-    (!config.variables_needed_to_start ||
-      config.variables_needed_to_start.length === 0)) {
+  const hasSurveyError = Object.keys(errors).find(e => e.includes('survey'))
+
+  if (config.survey_enabled &&
+    (config.variables_needed_to_start ||
+      config.variables_needed_to_start.length === 0) && hasSurveyError) {
     formErrorsContent.push({
       survey: true
     })

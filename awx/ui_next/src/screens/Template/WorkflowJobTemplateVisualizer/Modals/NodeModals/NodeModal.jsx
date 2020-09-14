@@ -24,7 +24,7 @@ import {
 import { JobTemplatesAPI, WorkflowJobTemplatesAPI } from '../../../../../api';
 import Wizard from '../../../../../components/Wizard';
 import { NodeTypeStep } from './NodeTypeStep';
-import useSteps from './LaunchPrompt/useSteps';
+import useSteps from '../../../../../components/LaunchPrompt/useSteps';
 import AlertModal from '../../../../../components/AlertModal';
 
 import RunStep from './RunStep';
@@ -182,7 +182,6 @@ function NodeModalForm({ askLinkType, i18n, onSave, title }) {
     steps: promptSteps,
     initialValues: promptStepsInitialValues,
     isReady,
-    // validate,
     visitStep,
     visitAllSteps,
     contentError,
