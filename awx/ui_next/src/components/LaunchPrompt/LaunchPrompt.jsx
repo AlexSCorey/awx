@@ -5,8 +5,10 @@ import { t } from '@lingui/macro';
 import { Formik, useFormikContext } from 'formik';
 import ContentError from '../ContentError';
 import ContentLoading from '../ContentLoading';
+import { useDismissableError } from '../../util/useRequest';
 import mergeExtraVars from './mergeExtraVars';
 import useSteps from './useSteps';
+import AlertModal from '../AlertModal';
 import getSurveyValues from './getSurveyValues';
 
 function PromptModalForm({ onSubmit, onCancel, i18n, config, resource }) {
@@ -20,6 +22,7 @@ function PromptModalForm({ onSubmit, onCancel, i18n, config, resource }) {
     visitAllSteps,
     contentError,
   } = useSteps(config, resource, i18n);
+
   useEffect(() => {
     if (Object.values(initialValues).length > 0 && isReady) {
       resetForm({
@@ -57,16 +60,26 @@ function PromptModalForm({ onSubmit, onCancel, i18n, config, resource }) {
 
     onSubmit(postValues);
   };
+  const { error, dismissError } = useDismissableError(contentError);
 
-  if (contentError) {
-    return <ContentError error={contentError} />;
+  if (error) {
+    return (
+      <AlertModal
+        isOpen={error}
+        variant="error"
+        title={i18n._(t`Error!`)}
+        onClose={() => {
+          dismissError();
+        }}
+      >
+        <ContentError error={error} />
+      </AlertModal>
+    );
   }
-  if (!isReady) {
-    return <ContentLoading />;
-  }
+
   return (
     <Wizard
-      isOpen
+      isOpen={!contentError}
       onClose={onCancel}
       onSave={handleSave}
       onNext={async (nextStep, prevStep) => {
@@ -86,7 +99,11 @@ function PromptModalForm({ onSubmit, onCancel, i18n, config, resource }) {
         await validateForm();
       }}
       title={i18n._(t`Prompts`)}
-      steps={steps}
+      steps={
+        isReady
+          ? steps
+          : [{ name: ContentLoading, component: <ContentLoading /> }]
+      }
       backButtonText={i18n._(t`Back`)}
       cancelButtonText={i18n._(t`Cancel`)}
       nextButtonText={i18n._(t`Next`)}
