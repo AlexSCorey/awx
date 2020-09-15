@@ -9,10 +9,15 @@ import useCredentialsStep from './steps/useCredentialsStep';
 import useOtherPromptsStep from './steps/useOtherPromptsStep';
 import useSurveyStep from './steps/useSurveyStep';
 import usePreviewStep from './steps/usePreviewStep';
+import useRunTypeStep from './steps/useRunTypeStep';
+import useNodeTypeStep from './steps/useNodeTypeStep';
 
-export default function useSteps(config, resource, i18n) {
+export default function useSteps(config, resource, i18n, askLinkType, isWorkflowNode) {
+
   const [visited, setVisited] = useState({});
   const steps = [
+    useRunTypeStep(askLinkType, i18n),
+    useNodeTypeStep(isWorkflowNode, i18n),
     useInventoryStep(config, resource, visited, i18n),
     useCredentialsStep(config, resource, visited, i18n),
     useOtherPromptsStep(config, resource, visited, i18n),
@@ -56,16 +61,16 @@ export default function useSteps(config, resource, i18n) {
   const contentError = stepWithError ? stepWithError.contentError : null;
 
   const validate = values => {
-    const errors = steps.reduce((acc, cur) => {
+    const validateErrors = steps.reduce((acc, cur) => {
       return {
         ...acc,
         ...cur.validate(values),
       };
     }, {});
-    if (Object.keys(errors).length) {
-      return errors;
+    if (Object.keys(validateErrors).length) {
+      return validateErrors;
     }
-    return false;
+    return validateErrors;
   };
 
   return {

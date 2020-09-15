@@ -23,11 +23,11 @@ import {
 } from '../../../../../contexts/Workflow';
 import { JobTemplatesAPI, WorkflowJobTemplatesAPI } from '../../../../../api';
 import Wizard from '../../../../../components/Wizard';
-import { NodeTypeStep } from './NodeTypeStep';
+// import { NodeTypeStep } from './NodeTypeStep';
 import useSteps from '../../../../../components/LaunchPrompt/useSteps';
 import AlertModal from '../../../../../components/AlertModal';
 
-import RunStep from './RunStep';
+// import RunStep from './RunStep';
 import NodeNextButton from './NodeNextButton';
 
 function canLaunchWithoutPrompt(launchData) {
@@ -127,27 +127,27 @@ function NodeModalForm({ askLinkType, i18n, onSave, title }) {
   } = useRequest(
     useCallback(async () => {
       const readLaunch =
-        nodeResource.type === 'workflow_job_template'
-          ? WorkflowJobTemplatesAPI.readLaunch(nodeResource.id)
-          : JobTemplatesAPI.readLaunch(nodeResource.id);
+        values.nodeResource.type === 'workflow_job_template'
+          ? WorkflowJobTemplatesAPI.readLaunch(values.nodeResource.id)
+          : JobTemplatesAPI.readLaunch(values.nodeResource.id);
 
       const { data } = await readLaunch;
       if (!canLaunchWithoutPrompt(data)) {
         setShowPromptSteps(true);
       }
       return data;
-    }, [nodeResource]),
+    }, [values.nodeResource]),
     {}
   );
 
   useEffect(() => {
     if (
-      nodeResource?.type === 'workflow_job_template' ||
-      nodeResource?.type === 'job_template'
+      values.nodeResource?.type === 'workflow_job_template' ||
+      values.nodeResource?.type === 'job_template'
     ) {
       readLaunchConfig();
     }
-  }, [readLaunchConfig, nodeResource]);
+  }, [readLaunchConfig, values]);
 
   const handleSaveNode = () => {
     clearQueryParams();
@@ -170,14 +170,6 @@ function NodeModalForm({ askLinkType, i18n, onSave, title }) {
     dispatch({ type: 'CANCEL_NODE_MODAL' });
   };
 
-  const handleNodeTypeChange = newNodeType => {
-    setNodeType(newNodeType);
-    setNodeResource(null);
-    setApprovalName('');
-    setApprovalDescription('');
-    setApprovalTimeout(0);
-  };
-
   const {
     steps: promptSteps,
     initialValues: promptStepsInitialValues,
@@ -185,7 +177,7 @@ function NodeModalForm({ askLinkType, i18n, onSave, title }) {
     visitStep,
     visitAllSteps,
     contentError,
-  } = useSteps(launchConfig, nodeResource, i18n, triggerNext);
+  } = useSteps(launchConfig, nodeResource, i18n, askLinkType, true);
   const { error, dismissError } = useDismissableError(
     launchConfigError || contentError
   );
@@ -213,44 +205,43 @@ function NodeModalForm({ askLinkType, i18n, onSave, title }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promptSteps.length, isReady]);
-
   const steps = [
-    ...(askLinkType
-      ? [
-          {
-            name: i18n._(t`Run Type`),
-            component: (
-              <RunStep linkType={linkType} onUpdateLinkType={setLinkType} />
-            ),
-            enableNext: linkType !== null,
-          },
-        ]
-      : []),
-    {
-      name: i18n._(t`Node Type`),
-      canJumpTo: triggerNext >= 2,
-      enableNext:
-        ready &&
-        ((nodeType !== 'approval' && nodeResource !== null) ||
-          (nodeType === 'approval' && approvalName !== '')),
-      component: (
-        <NodeTypeStep
-          description={approvalDescription}
-          name={approvalName}
-          nodeResource={nodeResource}
-          nodeType={nodeType}
-          onUpdateDescription={setApprovalDescription}
-          onUpdateName={setApprovalName}
-          onUpdateNodeResource={setNodeResource}
-          onUpdateNodeType={handleNodeTypeChange}
-          onUpdateTimeout={setApprovalTimeout}
-          timeout={approvalTimeout}
-        />
-      ),
-    },
-    ...(showPromptSteps && promptSteps.length > 1 && ready
-      ? [...promptSteps]
-      : []),
+    ...(ready ? [...promptSteps] : []),
+    // ...(askLinkType
+    //   ? [
+    //       {
+    //         name: i18n._(t`Run Type`),
+    //         component: (
+    //           <RunStep linkType={linkType} onUpdateLinkType={setLinkType} />
+    //         ),
+    //         enableNext: linkType !== null,
+    //       },
+    //     ]
+    //   : []),
+    // {
+    //   name: i18n._(t`Node Type`),
+    //   enableNext:
+    //     ready &&
+    //     ((nodeType !== 'approval' && nodeResource !== null) ||
+    //       (nodeType === 'approval' && approvalName !== '')),
+    //   component: (
+    //     <NodeTypeStep
+    //       description={approvalDescription}
+    //       name={approvalName}
+    //       nodeResource={nodeResource}
+    //       nodeType={nodeType}
+    //       onUpdateDescription={setApprovalDescription}
+    //       onUpdateName={setApprovalName}
+    //       onUpdateNodeResource={setNodeResource}
+    //       onUpdateNodeType={handleNodeTypeChange}
+    //       onUpdateTimeout={setApprovalTimeout}
+    //       timeout={approvalTimeout}
+    //     />
+    //   ),
+    // },
+    // ...(showPromptSteps && promptSteps.length > 1 && ready
+    //   ? [...promptSteps]
+    //   : []),
   ];
 
   const CustomFooter = (
