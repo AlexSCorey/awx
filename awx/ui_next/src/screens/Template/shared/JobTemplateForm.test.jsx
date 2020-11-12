@@ -200,9 +200,14 @@ describe('<JobTemplateForm />', () => {
         'devel'
       );
       wrapper.find('TextInputBase#template-limit').prop('onChange')(1234567890);
-      wrapper.find('AnsibleSelect[name="playbook"]').simulate('change', {
-        target: { value: 'new baz type', name: 'playbook' },
-      });
+      wrapper
+        .find('Select[placeholderText="Choose a playbook"]')
+        .prop('onToggle')(true);
+      wrapper.update();
+      wrapper
+        .find('PlaybookSelect')
+        .find('Select')
+        .invoke('onSelect')({}, 'chatty.yml');
     });
 
     await act(async () => {
@@ -238,8 +243,10 @@ describe('<JobTemplateForm />', () => {
       1234567890
     );
     expect(
-      wrapper.find('AnsibleSelect[name="playbook"]').prop('value')
-    ).toEqual('new baz type');
+      wrapper
+        .find('Select[placeholderText="Choose a playbook"]')
+        .prop('selections')
+    ).toEqual('chatty.yml');
     expect(wrapper.find('MultiCredentialsLookup').prop('value')).toEqual([
       {
         id: 2,
