@@ -67,6 +67,8 @@ function PlaybookSelect({
 
   return (
     <Select
+      maxHeight="100vh"
+      noResultsFoundText={i18n._(t`No results found`)}
       variant={SelectVariant.typeahead}
       onToggle={() => {
         helpers.setTouched();
