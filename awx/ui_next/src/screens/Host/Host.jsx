@@ -20,6 +20,7 @@ import HostDetail from './HostDetail';
 import HostEdit from './HostEdit';
 import HostGroups from './HostGroups';
 import { HostsAPI } from '../../api';
+import { LoadingProvider } from '../../contexts/Loading';
 
 function Host({ i18n, setBreadcrumb }) {
   const [host, setHost] = useState(null);
@@ -77,15 +78,15 @@ function Host({ i18n, setBreadcrumb }) {
     },
   ];
 
-  if (hasContentLoading) {
-    return (
-      <PageSection>
-        <Card>
-          <ContentLoading />
-        </Card>
-      </PageSection>
-    );
-  }
+  // if (hasContentLoading) {
+  //   return (
+  //     <PageSection>
+  //       <Card>
+  //         <ContentLoading />
+  //       </Card>
+  //     </PageSection>
+  //   );
+  // }
 
   if (contentError) {
     return (
@@ -111,38 +112,44 @@ function Host({ i18n, setBreadcrumb }) {
   }
 
   return (
-    <PageSection>
-      <Card>
-        {showCardHeader && <RoutedTabs tabsArray={tabsArray} />}
-        <Switch>
-          <Redirect from="/hosts/:id" to="/hosts/:id/details" exact />
-          {host && [
+    <LoadingProvider value={{ isLoading: hasContentLoading }}>
+      <PageSection>
+        <Card>
+          {showCardHeader && <RoutedTabs tabsArray={tabsArray} />}
+          <Switch>
+            <Redirect from="/hosts/:id" to="/hosts/:id/details" exact />
+            {/* {host && [ */}
             <Route path="/hosts/:id/details" key="details">
               <HostDetail host={host} />
-            </Route>,
+            </Route>
+
             <Route path="/hosts/:id/edit" key="edit">
               <HostEdit host={host} />
-            </Route>,
+            </Route>
+
             <Route key="facts" path="/hosts/:id/facts">
               <HostFacts host={host} />
-            </Route>,
+            </Route>
+
             <Route path="/hosts/:id/groups" key="groups">
               <HostGroups host={host} />
-            </Route>,
+            </Route>
+
             <Route path="/hosts/:id/completed_jobs" key="completed-jobs">
-              <JobList defaultParams={{ job__hosts: host.id }} />
-            </Route>,
-          ]}
-          <Route key="not-found" path="*">
-            <ContentError isNotFound>
-              <Link to={`${match.url}/details`}>
-                {i18n._(t`View Host Details`)}
-              </Link>
-            </ContentError>
-          </Route>
-        </Switch>
-      </Card>
-    </PageSection>
+              <JobList defaultParams={{ job__hosts: match.params.id }} />
+            </Route>
+            {/* // ]} */}
+            <Route key="not-found" path="*">
+              <ContentError isNotFound>
+                <Link to={`${match.url}/details`}>
+                  {i18n._(t`View Host Details`)}
+                </Link>
+              </ContentError>
+            </Route>
+          </Switch>
+        </Card>
+      </PageSection>
+    </LoadingProvider>
   );
 }
 

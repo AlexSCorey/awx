@@ -18,8 +18,17 @@ import Sparkline from '../../../components/Sparkline';
 import DeleteButton from '../../../components/DeleteButton';
 import { HostsAPI } from '../../../api';
 import HostToggle from '../../../components/HostToggle';
+import ContentLoading from '../../../components/ContentLoading';
+import { useLoading } from '../../../contexts/Loading';
 
 function HostDetail({ i18n, host }) {
+  const { isLoading: globalLoading } = useLoading();
+  const [isLoading, setIsloading] = useState(false);
+  const [deletionError, setDeletionError] = useState(false);
+  const history = useHistory();
+  if (globalLoading) {
+    return <ContentLoading />;
+  }
   const {
     created,
     description,
@@ -35,11 +44,6 @@ function HostDetail({ i18n, host }) {
       user_capabilities,
     },
   } = host;
-
-  const [isLoading, setIsloading] = useState(false);
-  const [deletionError, setDeletionError] = useState(false);
-  const history = useHistory();
-
   const handleHostDelete = async () => {
     setIsloading(true);
     try {
