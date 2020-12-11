@@ -30,8 +30,48 @@ import LaunchButton from '../../../components/LaunchButton';
 import { VariablesDetail } from '../../../components/CodeMirrorInput';
 import { JobTemplatesAPI } from '../../../api';
 import useRequest, { useDismissableError } from '../../../util/useRequest';
+import { useLoading } from '../../../contexts/Loading';
 
 function JobTemplateDetail({ i18n, template }) {
+  const [contentError, setContentError] = useState(null);
+  const [hasContentLoading, setHasContentLoading] = useState(false);
+  const [instanceGroups, setInstanceGroups] = useState([]);
+  const { id: templateId } = useParams();
+  const history = useHistory();
+
+  useEffect(() => {
+    (async () => {
+      setContentError(null);
+      setHasContentLoading(true);
+      try {
+        const {
+          data: { results = [] },
+        } = await JobTemplatesAPI.readInstanceGroups(templateId);
+        setInstanceGroups(results);
+      } catch (error) {
+        setContentError(error);
+      } finally {
+        setHasContentLoading(false);
+      }
+    })();
+  }, [templateId]);
+
+  const {
+    request: deleteJobTemplate,
+    isLoading: isDeleteLoading,
+    error: deleteError,
+  } = useRequest(
+    useCallback(async () => {
+      await JobTemplatesAPI.destroy(templateId);
+      history.push(`/templates`);
+    }, [templateId, history])
+  );
+  const { error, dismissError } = useDismissableError(deleteError);
+
+  const { isLoading } = useLoading();
+  if (isLoading || !template) {
+    return <ContentLoading />;
+  }
   const {
     ask_inventory_on_launch,
     allow_simultaneous,
@@ -59,41 +99,6 @@ function JobTemplateDetail({ i18n, template }) {
     related: { webhook_receiver },
     webhook_key,
   } = template;
-  const [contentError, setContentError] = useState(null);
-  const [hasContentLoading, setHasContentLoading] = useState(false);
-  const [instanceGroups, setInstanceGroups] = useState([]);
-  const { id: templateId } = useParams();
-  const history = useHistory();
-
-  useEffect(() => {
-    (async () => {
-      setContentError(null);
-      setHasContentLoading(true);
-      try {
-        const {
-          data: { results = [] },
-        } = await JobTemplatesAPI.readInstanceGroups(templateId);
-        setInstanceGroups(results);
-      } catch (error) {
-        setContentError(error);
-      } finally {
-        setHasContentLoading(false);
-      }
-    })();
-  }, [templateId]);
-
-  const {
-    request: deleteJobTemplate,
-    isLoading,
-    error: deleteError,
-  } = useRequest(
-    useCallback(async () => {
-      await JobTemplatesAPI.destroy(templateId);
-      history.push(`/templates`);
-    }, [templateId, history])
-  );
-
-  const { error, dismissError } = useDismissableError(deleteError);
 
   const canLaunch =
     summary_fields.user_capabilities && summary_fields.user_capabilities.start;
@@ -156,10 +161,6 @@ function JobTemplateDetail({ i18n, template }) {
 
   if (contentError) {
     return <ContentError error={contentError} />;
-  }
-
-  if (hasContentLoading) {
-    return <ContentLoading />;
   }
 
   return (
@@ -389,7 +390,7 @@ function JobTemplateDetail({ i18n, template }) {
               name={name}
               modalTitle={i18n._(t`Delete Job Template`)}
               onConfirm={deleteJobTemplate}
-              isDisabled={isLoading}
+              isDisabled={isDeleteLoading}
             >
               {i18n._(t`Delete`)}
             </DeleteButton>

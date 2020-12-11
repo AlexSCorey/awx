@@ -23,6 +23,7 @@ import JobTemplateDetail from './JobTemplateDetail';
 import JobTemplateEdit from './JobTemplateEdit';
 import { JobTemplatesAPI, OrganizationsAPI } from '../../api';
 import TemplateSurvey from './TemplateSurvey';
+import { LoadingProvider } from '../../contexts/Loading';
 
 function Template({ i18n, me, setBreadcrumb }) {
   const location = useLocation();
@@ -156,88 +157,87 @@ function Template({ i18n, me, setBreadcrumb }) {
   }
 
   return (
-    <PageSection>
-      <Card>
-        {showCardHeader && <RoutedTabs tabsArray={tabsArray} />}
-        <Switch>
-          <Redirect
-            from="/templates/:templateType/:id"
-            to="/templates/:templateType/:id/details"
-            exact
-          />
-          {template && (
+    <LoadingProvider value={{ isLoading: hasRolesandTemplateLoading }}>
+      <PageSection>
+        <Card>
+          {showCardHeader && <RoutedTabs tabsArray={tabsArray} />}
+          <Switch>
+            <Redirect
+              from="/templates/:templateType/:id"
+              to="/templates/:templateType/:id/details"
+              exact
+            />
+            {/* {template && ( */}
             <Route key="details" path="/templates/:templateType/:id/details">
-              <JobTemplateDetail
-                hasTemplateLoading={hasRolesandTemplateLoading}
-                template={template}
-              />
+              <JobTemplateDetail template={template} />
             </Route>
-          )}
-          {template && (
+            {/* )} */}
+            {/* {template && ( */}
             <Route key="edit" path="/templates/:templateType/:id/edit">
               <JobTemplateEdit template={template} />
             </Route>
-          )}
-          {template && (
+            {/* )} */}
+            {/* {template && ( */}
             <Route key="access" path="/templates/:templateType/:id/access">
               <ResourceAccessList
                 resource={template}
                 apiModel={JobTemplatesAPI}
               />
             </Route>
-          )}
-          {template && (
-            <Route
-              key="schedules"
-              path="/templates/:templateType/:id/schedules"
-            >
-              <Schedules
-                createSchedule={createSchedule}
-                setBreadcrumb={setBreadcrumb}
-                unifiedJobTemplate={template}
-                loadSchedules={loadSchedules}
-                loadScheduleOptions={loadScheduleOptions}
-              />
-            </Route>
-          )}
-          {canSeeNotificationsTab && (
-            <Route path="/templates/:templateType/:id/notifications">
-              <NotificationList
-                id={Number(templateId)}
-                canToggleNotifications={isNotifAdmin}
-                apiModel={JobTemplatesAPI}
-              />
-            </Route>
-          )}
-          {template?.id && (
-            <Route path="/templates/:templateType/:id/completed_jobs">
-              <JobList defaultParams={{ job__job_template: template.id }} />
-            </Route>
-          )}
-          {template && (
-            <Route path="/templates/:templateType/:id/survey">
-              <TemplateSurvey
-                template={template}
-                canEdit={canAddAndEditSurvey}
-              />
-            </Route>
-          )}
-          {!hasRolesandTemplateLoading && (
-            <Route key="not-found" path="*">
-              <ContentError isNotFound>
-                {match.params.id && (
-                  <Link
-                    to={`/templates/${match.params.templateType}/${match.params.id}/details`}
-                  >
-                    {i18n._(t`View Template Details`)}
-                  </Link>
-                )}
-              </ContentError>
-            </Route>
-          )}
-        </Switch>
-      </Card>
-    </PageSection>
+            {/* )} */}
+            {template && (
+              <Route
+                key="schedules"
+                path="/templates/:templateType/:id/schedules"
+              >
+                <Schedules
+                  createSchedule={createSchedule}
+                  setBreadcrumb={setBreadcrumb}
+                  unifiedJobTemplate={template}
+                  loadSchedules={loadSchedules}
+                  loadScheduleOptions={loadScheduleOptions}
+                />
+              </Route>
+            )}
+            {canSeeNotificationsTab && (
+              <Route path="/templates/:templateType/:id/notifications">
+                <NotificationList
+                  id={Number(templateId)}
+                  canToggleNotifications={isNotifAdmin}
+                  apiModel={JobTemplatesAPI}
+                />
+              </Route>
+            )}
+            {template?.id && (
+              <Route path="/templates/:templateType/:id/completed_jobs">
+                <JobList defaultParams={{ job__job_template: template.id }} />
+              </Route>
+            )}
+            {template && (
+              <Route path="/templates/:templateType/:id/survey">
+                <TemplateSurvey
+                  template={template}
+                  canEdit={canAddAndEditSurvey}
+                />
+              </Route>
+            )}
+            {!hasRolesandTemplateLoading && (
+              <Route key="not-found" path="*">
+                <ContentError isNotFound>
+                  {match.params.id && (
+                    <Link
+                      to={`/templates/${match.params.templateType}/${match.params.id}/details`}
+                    >
+                      {i18n._(t`View Template Details`)}
+                    </Link>
+                  )}
+                </ContentError>
+              </Route>
+            )}
+          </Switch>
+        </Card>
+      </PageSection>
+    </LoadingProvider>
   );
 }
 

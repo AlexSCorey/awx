@@ -12,7 +12,7 @@ import ContentError from '../ContentError';
 import ContentLoading from '../ContentLoading';
 import Pagination from '../Pagination';
 import DataListToolbar from '../DataListToolbar';
-
+import { useLoading } from '../../contexts/Loading';
 import {
   encodeNonDefaultQueryString,
   parseQueryString,
@@ -22,12 +22,12 @@ import {
 import { QSConfig, SearchColumns, SortColumns } from '../../types';
 
 import PaginatedDataListItem from './PaginatedDataListItem';
+import LoadingSpinner from '../LoadingSpinner';
 
 function PaginatedDataList({
   items,
   onRowClick,
   contentError,
-  hasContentLoading,
   emptyStateControls,
   itemCount,
   qsConfig,
@@ -42,6 +42,8 @@ function PaginatedDataList({
   i18n,
   renderToolbar,
 }) {
+  const { isLoading } = useLoading();
+
   const { search, pathname } = useLocation();
   const history = useHistory();
   const handleListItemSelect = (id = 0) => {
@@ -90,7 +92,7 @@ function PaginatedDataList({
   const emptyContentTitle = i18n._(t`No ${pluralizedItemName} Found `);
 
   let Content;
-  if (hasContentLoading && items.length <= 0) {
+  if (isLoading && items.length <= 0) {
     Content = <ContentLoading />;
   } else if (contentError) {
     Content = <ContentError error={contentError} />;
@@ -100,12 +102,19 @@ function PaginatedDataList({
     );
   } else {
     Content = (
-      <DataList
-        aria-label={dataListLabel}
-        onSelectDataListItem={id => handleListItemSelect(id)}
-      >
-        {items.map(renderItem)}
-      </DataList>
+      <>
+        {isLoading && (
+          <>
+            <LoadingSpinner />
+          </>
+        )}
+        <DataList
+          aria-label={dataListLabel}
+          onSelectDataListItem={id => handleListItemSelect(id)}
+        >
+          {items.map(renderItem)}
+        </DataList>
+      </>
     );
   }
 
@@ -187,13 +196,13 @@ PaginatedDataList.propTypes = {
   toolbarSortColumns: SortColumns,
   showPageSizeOptions: PropTypes.bool,
   renderToolbar: PropTypes.func,
-  hasContentLoading: PropTypes.bool,
+  // hasContentLoading: PropTypes.bool,
   contentError: PropTypes.shape(),
   onRowClick: PropTypes.func,
 };
 
 PaginatedDataList.defaultProps = {
-  hasContentLoading: false,
+  // hasContentLoading: false,
   contentError: null,
   toolbarSearchColumns: [],
   toolbarSearchableKeys: [],

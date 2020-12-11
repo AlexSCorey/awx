@@ -19,6 +19,7 @@ import { getQSConfig, parseQueryString } from '../../../util/qs';
 import useWsTemplates from '../../../util/useWsTemplates';
 import AddDropDownButton from '../../../components/AddDropDownButton';
 import TemplateListItem from './TemplateListItem';
+import { LoadingProvider } from '../../../contexts/Loading';
 
 // The type value in const QS_CONFIG below does not have a space between job_template and
 // workflow_job_template so the params sent to the API match what the api expects.
@@ -165,11 +166,11 @@ function TemplateList({ i18n }) {
   );
 
   return (
-    <Fragment>
+    <LoadingProvider value={{ isLoading: isLoading || isDeleteLoading }}>
       <Card>
         <PaginatedDataList
           contentError={contentError}
-          hasContentLoading={isLoading || isDeleteLoading}
+          // hasContentLoading={isLoading || isDeleteLoading}
           items={templates}
           itemCount={count}
           pluralizedItemName={i18n._(t`Templates`)}
@@ -276,7 +277,7 @@ function TemplateList({ i18n }) {
         {i18n._(t`Failed to delete one or more templates.`)}
         <ErrorDetail error={deletionError} />
       </AlertModal>
-    </Fragment>
+    </LoadingProvider>
   );
 }
 
