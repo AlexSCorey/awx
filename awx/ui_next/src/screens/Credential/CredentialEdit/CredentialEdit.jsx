@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { object } from 'prop-types';
 import { CardBody } from '../../../components/Card';
@@ -13,10 +13,6 @@ import CredentialForm from '../shared/CredentialForm';
 import useRequest from '../../../util/useRequest';
 
 function CredentialEdit({ credential, me }) {
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [credentialTypes, setCredentialTypes] = useState(null);
-  const [inputSources, setInputSources] = useState({});
   const history = useHistory();
 
   const { error: submitError, request: submitRequest, result } = useRequest(
@@ -79,8 +75,10 @@ function CredentialEdit({ credential, me }) {
             }
             return null;
           });
-
-        const modifiedData = { inputs: nonPluginInputs, ...remainingValues };
+        const modifiedData = {
+          inputs: nonPluginInputs,
+          ...remainingValues,
+        };
         // can send only one of org, user, team
         if (organization?.id) {
           modifiedData.organization = organization.id;
@@ -90,10 +88,8 @@ function CredentialEdit({ credential, me }) {
         const [{ data }] = await Promise.all([
           CredentialsAPI.update(credential.id, modifiedData),
           ...destroyInputSources(),
+          createAndUpdateInputSources(),
         ]);
-
-        await Promise.all(createAndUpdateInputSources());
-
         return data;
       },
       [me, credential.id]
@@ -105,42 +101,49 @@ function CredentialEdit({ credential, me }) {
       history.push(`/credentials/${result.id}/details`);
     }
   }, [result, history]);
+  const {
+    isLoading,
+    error,
+    result: { credentialTypes, inputSources },
+    request: fetchData,
+  } = useRequest(
+    useCallback(async () => {
+      const [
+        {
+          data: { results: loadedCredentialTypes },
+        },
+        {
+          data: { results: loadedInputSources },
+        },
+      ] = await Promise.all([
+        CredentialTypesAPI.read({ page_size: 200 }),
+        CredentialsAPI.readInputSources(credential.id, { page_size: 200 }),
+      ]);
+      const credTypes = loadedCredentialTypes.reduce(
+        (credentialTypesMap, credentialType) => {
+          credentialTypesMap[credentialType.id] = credentialType;
+          return credentialTypesMap;
+        },
+        {}
+      );
+      const inputTypes = loadedInputSources.reduce(
+        (inputSourcesMap, inputSource) => {
+          inputSourcesMap[inputSource.input_field_name] = inputSource;
+          return inputSourcesMap;
+        },
+        {}
+      );
 
+      return {
+        credentialTypes: credTypes,
+        inputSources: inputTypes,
+      };
+    }, [credential.id]),
+    { credentialTypes: {}, inputSources: {} }
+  );
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [
-          {
-            data: { results: loadedCredentialTypes },
-          },
-          {
-            data: { results: loadedInputSources },
-          },
-        ] = await Promise.all([
-          CredentialTypesAPI.read(),
-          CredentialsAPI.readInputSources(credential.id, { page_size: 200 }),
-        ]);
-        setCredentialTypes(
-          loadedCredentialTypes.reduce((credentialTypesMap, credentialType) => {
-            credentialTypesMap[credentialType.id] = credentialType;
-            return credentialTypesMap;
-          }, {})
-        );
-        setInputSources(
-          loadedInputSources.reduce((inputSourcesMap, inputSource) => {
-            inputSourcesMap[inputSource.input_field_name] = inputSource;
-            return inputSourcesMap;
-          }, {})
-        );
-      } catch (err) {
-        setError(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [credential.id]);
-
+    fetchData();
+  }, [fetchData]);
   const handleCancel = () => {
     const url = `/credentials/${credential.id}/details`;
     history.push(`${url}`);
@@ -173,7 +176,7 @@ function CredentialEdit({ credential, me }) {
 }
 
 CredentialEdit.proptype = {
-  inventory: object.isRequired,
+  credential: object.isRequired,
 };
 
 export { CredentialEdit as _CredentialEdit };

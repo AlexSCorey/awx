@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { PageSection, Card } from '@patternfly/react-core';
 import { CardBody } from '../../../components/Card';
@@ -14,9 +14,6 @@ import CredentialForm from '../shared/CredentialForm';
 import useRequest from '../../../util/useRequest';
 
 function CredentialAdd({ me }) {
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [credentialTypes, setCredentialTypes] = useState(null);
   const history = useHistory();
 
   const {
@@ -86,26 +83,35 @@ function CredentialAdd({ me }) {
     }
   }, [credentialId, history]);
 
+  const {
+    isLoading,
+    error,
+    request: fetchData,
+    result: credentialTypes,
+  } = useRequest(
+    useCallback(async () => {
+      const {
+        data: { results: loadedCredentialTypes },
+      } = await CredentialTypesAPI.read({
+        page_size: 200,
+      });
+
+      const creds = loadedCredentialTypes.reduce(
+        (credentialTypesMap, credentialType) => {
+          credentialTypesMap[credentialType.id] = credentialType;
+          return credentialTypesMap;
+        },
+        {}
+      );
+
+      return creds;
+    }, []),
+    {}
+  );
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const {
-          data: { results: loadedCredentialTypes },
-        } = await CredentialTypesAPI.read();
-        setCredentialTypes(
-          loadedCredentialTypes.reduce((credentialTypesMap, credentialType) => {
-            credentialTypesMap[credentialType.id] = credentialType;
-            return credentialTypesMap;
-          }, {})
-        );
-      } catch (err) {
-        setError(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   const handleCancel = () => {
     history.push('/credentials');
